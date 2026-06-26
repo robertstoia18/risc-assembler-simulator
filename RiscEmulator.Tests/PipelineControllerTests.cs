@@ -73,28 +73,22 @@ public class PipelineControllerTests
     [Fact]
     public void HazardDetection_StallsOnLoadUseHazard()
     {
-        // LOAD urmat imediat de USE: forwarding din EX nu e posibil (data vine din MEM),
-        // deci se produce exact 1 stall cycle.
-        string src = "MOV R1,(R8)\nADD R4,R1,R5";
+        string src = "LD R1,(R8)\nADD R4,R1,R5";
         var (ctrl, state) = Setup(src, 0);
 
         state.Registers.Write(8, 50);
         state.Memory.Write(50, 100);
         state.Registers.Write(5, 3);
 
-        // Tick 1: LOAD intra in OF
         ctrl.Tick();
         Assert.True(state.Registers.IsValid(1));
 
-        // Tick 2: OF proceseaza LOAD (R1 invalidat), ADD intra in OF
         ctrl.Tick();
         Assert.False(state.Registers.IsValid(1), "R1 invalidat dupa OF pentru LOAD");
 
-        // Tick 3: LOAD in EX (calculeaza MAR), ADD in OF → stall (fara fwd din EX pentru LOAD)
         ctrl.Tick();
         Assert.True(ctrl.LastCycleHadStall, "Load-use hazard trebuie sa produca stall");
 
-        // Tick 4: LOAD in MEM (citeste memoria), ADD in OF → forward din MEM, fara stall
         ctrl.Tick();
         Assert.False(ctrl.LastCycleHadStall, "Tick 4: forwarding din MEM elimina stallul");
 
@@ -130,7 +124,7 @@ public class PipelineControllerTests
     [Fact]
     public void LoadInstruction_AccessesMemory()
     {
-        string src = "MOV R1,(R8)";
+        string src = "LD R1,(R8)";
         var (ctrl, state) = Setup(src, 0);
 
         state.Registers.Write(8, 10);
@@ -144,7 +138,7 @@ public class PipelineControllerTests
     [Fact]
     public void StoreInstruction_WritesMemory()
     {
-        string src = "MOV (R8),R1";
+        string src = "ST (R8),R1";
         var (ctrl, state) = Setup(src, 0);
 
         state.Registers.Write(8, 20);
@@ -169,8 +163,8 @@ public class PipelineControllerTests
     [Fact]
     public void BranchNotTaken_ContinuesSequentially()
     {
-        // CMP R1,R2: R1=1, R2=2 → Z=0 → BEQ nu sare → ADD R5 executa
-        string src = "CMP R1,R2\nBEQ loop\nADD R5,R5,R5\nloop: NOP";
+        // BEQ R1,R2,loop: R1=1, R2=2 → nu sunt egale → branch nu se face → ADD R5 executa
+        string src = "BEQ R1,R2,loop\nADD R5,R5,R5\nloop: NOP";
         var (ctrl, state) = Setup(src, 0);
 
         state.Registers.Write(1, 1);
@@ -180,6 +174,22 @@ public class PipelineControllerTests
         for (int i = 0; i < 20; i++) ctrl.Tick();
 
         Assert.Equal(14, state.Registers.Read(5));
+    }
+
+    [Fact]
+    public void BranchTaken_JumpsToTarget()
+    {
+        // BEQ R1,R2,skip: R1=R2=5 → egale → branch luat → ADD nu executa
+        string src = "BEQ R1,R2,skip\nADD R5,R5,R5\nskip: NOP";
+        var (ctrl, state) = Setup(src, 0);
+
+        state.Registers.Write(1, 5);
+        state.Registers.Write(2, 5);
+        state.Registers.Write(5, 7);
+
+        for (int i = 0; i < 20; i++) ctrl.Tick();
+
+        Assert.Equal(7, state.Registers.Read(5));
     }
 
     [Fact]
@@ -209,5 +219,31 @@ public class PipelineControllerTests
         for (int i = 0; i < 8; i++) ctrl.Tick();
 
         Assert.Equal(0, state.Registers.Read(0));
+    }
+
+    [Fact]
+    public void AluImmediate_ComputesCorrectly()
+    {
+        string src = "ADD R1,R2,#10";
+        var (ctrl, state) = Setup(src, 0);
+
+        state.Registers.Write(2, 5);
+
+        for (int i = 0; i < 8; i++) ctrl.Tick();
+
+        Assert.Equal(15, state.Registers.Read(1));
+    }
+
+    [Fact]
+    public void JalSavesReturnAddress()
+    {
+        // JAL 200h la addr 0 (2 cuvinte), return addr = 2
+        string src = "JAL 200h";
+        var (ctrl, state) = Setup(src, 0);
+
+        for (int i = 0; i < 8; i++) ctrl.Tick();
+
+        Assert.Equal(0x200, state.PC);
+        Assert.Equal(2, state.Registers.Read(31));
     }
 }

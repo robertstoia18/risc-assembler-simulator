@@ -2,8 +2,8 @@ namespace RiscEmulator.Logic;
 
 public class RegisterFile
 {
-    private readonly int[] _values = new int[16];
-    private readonly bool[] _valid = new bool[16];
+    private readonly int[] _values = new int[32];
+    private readonly bool[] _valid = new bool[32];
 
     public RegisterFile()
     {
@@ -12,7 +12,7 @@ public class RegisterFile
 
     public void Reset()
     {
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < 32; i++)
         {
             _values[i] = 0;
             _valid[i] = true;

@@ -18,11 +18,12 @@ public enum InstructionClass
 
 public enum Opcode
 {
-    MOV, ADD, SUB, CMP, AND, OR, XOR,
-    CLR, NEG, INC, DEC, ASL, ASR, LSR, ROL, ROR, RLC, RRC, PUSH, POP, JMP, CALL,
-    BR, BNE, BEQ, BPL, BMI, BCS, BCC, BVS, BVC,
-    CLC, CLV, CLZ, CLS, CCC, SEC, SEV, SEZ, SES, SCC,
-    NOP, HALT, PUSHPC, POPPC, PUSHFLAG, POPFLAG, RET, RETI, WAIT
+    LD, ST,
+    ADD, SUB, AND, OR, XOR,
+    CLR, NEG, INC, DEC, ASL, ASR, LSR, ROL, ROR, RLC, RRC,
+    PUSH, POP, JMP, JAL,
+    BNE, BEQ, BL, BGE,
+    NOP, HALT, RET, RETI, WAIT
 }
 
 public static class InstructionSet
@@ -31,10 +32,10 @@ public static class InstructionSet
     {
         switch (op)
         {
-            case Opcode.MOV:
+            case Opcode.LD:
+            case Opcode.ST:
             case Opcode.ADD:
             case Opcode.SUB:
-            case Opcode.CMP:
             case Opcode.AND:
             case Opcode.OR:
             case Opcode.XOR:
@@ -54,18 +55,13 @@ public static class InstructionSet
             case Opcode.PUSH:
             case Opcode.POP:
             case Opcode.JMP:
-            case Opcode.CALL:
+            case Opcode.JAL:
                 return InstructionClass.Class2;
 
-            case Opcode.BR:
             case Opcode.BNE:
             case Opcode.BEQ:
-            case Opcode.BPL:
-            case Opcode.BMI:
-            case Opcode.BCS:
-            case Opcode.BCC:
-            case Opcode.BVS:
-            case Opcode.BVC:
+            case Opcode.BL:
+            case Opcode.BGE:
                 return InstructionClass.Class3;
 
             default:
@@ -77,7 +73,7 @@ public static class InstructionSet
     {
         switch (op)
         {
-            case Opcode.MOV:
+            case Opcode.LD:
             case Opcode.ADD:
             case Opcode.SUB:
             case Opcode.AND:
@@ -95,6 +91,7 @@ public static class InstructionSet
             case Opcode.RLC:
             case Opcode.RRC:
             case Opcode.POP:
+            case Opcode.JAL:
                 return true;
             default:
                 return false;
@@ -105,10 +102,10 @@ public static class InstructionSet
     {
         switch (op)
         {
-            case Opcode.MOV:
+            case Opcode.LD:
+            case Opcode.ST:
             case Opcode.ADD:
             case Opcode.SUB:
-            case Opcode.CMP:
             case Opcode.AND:
             case Opcode.OR:
             case Opcode.XOR:
@@ -124,7 +121,11 @@ public static class InstructionSet
             case Opcode.RRC:
             case Opcode.PUSH:
             case Opcode.JMP:
-            case Opcode.CALL:
+            case Opcode.JAL:
+            case Opcode.BNE:
+            case Opcode.BEQ:
+            case Opcode.BL:
+            case Opcode.BGE:
                 return true;
             default:
                 return false;
@@ -137,24 +138,41 @@ public static class InstructionSet
         {
             case Opcode.ADD:
             case Opcode.SUB:
-            case Opcode.CMP:
             case Opcode.AND:
             case Opcode.OR:
             case Opcode.XOR:
+            case Opcode.BNE:
+            case Opcode.BEQ:
+            case Opcode.BL:
+            case Opcode.BGE:
                 return true;
             default:
                 return false;
         }
     }
 
+    public static int GetWordCount(Instruction instr)
+    {
+        if (instr.Class == InstructionClass.Class3)
+            return 2;
+        if (instr.SourceMode == AddressingMode.AX || instr.DestMode == AddressingMode.AX)
+            return 2;
+        if (instr.Class == InstructionClass.Class2 &&
+            (instr.SourceMode == AddressingMode.AM || instr.SourceMode == AddressingMode.AX))
+            return 2;
+        if (instr.Class == InstructionClass.Class1 && instr.SourceMode == AddressingMode.AM)
+            return 2;
+        return 1;
+    }
+
     public static int GetClass1Opcode(Opcode op)
     {
         switch (op)
         {
-            case Opcode.MOV: return 0b0000;
-            case Opcode.ADD: return 0b0001;
-            case Opcode.SUB: return 0b0010;
-            case Opcode.CMP: return 0b0011;
+            case Opcode.LD:  return 0b0000;
+            case Opcode.ST:  return 0b0001;
+            case Opcode.ADD: return 0b0010;
+            case Opcode.SUB: return 0b0011;
             case Opcode.AND: return 0b0100;
             case Opcode.OR:  return 0b0101;
             case Opcode.XOR: return 0b0110;
@@ -180,7 +198,7 @@ public static class InstructionSet
             case Opcode.PUSH: return 0b0000001011;
             case Opcode.POP:  return 0b0000001100;
             case Opcode.JMP:  return 0b0000001101;
-            case Opcode.CALL: return 0b0000001110;
+            case Opcode.JAL:  return 0b0000001110;
             default: return -1;
         }
     }
@@ -189,15 +207,10 @@ public static class InstructionSet
     {
         switch (op)
         {
-            case Opcode.BR:  return 0b00000000;
             case Opcode.BNE: return 0b00000001;
             case Opcode.BEQ: return 0b00000010;
-            case Opcode.BPL: return 0b00000011;
-            case Opcode.BMI: return 0b00000100;
-            case Opcode.BCS: return 0b00000101;
-            case Opcode.BCC: return 0b00000110;
-            case Opcode.BVS: return 0b00000111;
-            case Opcode.BVC: return 0b00001000;
+            case Opcode.BL:  return 0b00000011;
+            case Opcode.BGE: return 0b00000100;
             default: return -1;
         }
     }

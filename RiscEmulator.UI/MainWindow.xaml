@@ -8,8 +8,6 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
-        <vm:BoolToFlagConverter x:Key="BoolToZero"/>
-
         <Style x:Key="PanelLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#AAAAAA"/>
             <Setter Property="FontSize" Value="11"/>
@@ -199,21 +197,16 @@
                         <TextBlock Text="{Binding RegC}" Style="{StaticResource ValueLabel}"/>
                     </StackPanel>
                     <StackPanel Grid.Row="1" Grid.Column="3">
-                        <TextBlock Text="Flags Z C S O" Style="{StaticResource PanelLabel}"/>
-                        <TextBlock FontFamily="Consolas" FontSize="13" Foreground="#FFD166">
-                            <Run Text="{Binding FlagZ, Converter={StaticResource BoolToZero}, ConverterParameter=Z}"/>
-                            <Run Text="{Binding FlagC, Converter={StaticResource BoolToZero}, ConverterParameter=C}"/>
-                            <Run Text="{Binding FlagS, Converter={StaticResource BoolToZero}, ConverterParameter=S}"/>
-                            <Run Text="{Binding FlagO, Converter={StaticResource BoolToZero}, ConverterParameter=O}"/>
-                        </TextBlock>
+                        <TextBlock Text="ISA" Style="{StaticResource PanelLabel}"/>
+                        <TextBlock Text="RISC Load/Store" Style="{StaticResource ValueLabel}" FontSize="11"/>
                     </StackPanel>
                 </Grid>
             </StackPanel>
 
             <!-- Fișier de registre -->
             <StackPanel Grid.Column="1" Margin="0,0,8,0">
-                <TextBlock Text="Fișier registre R0–R15" Style="{StaticResource SectionHeader}"/>
-                <TextBlock Text="Verde=valid  Roșu=busy(B)"
+                <TextBlock Text="Fișier registre R0–R31" Style="{StaticResource SectionHeader}"/>
+                <TextBlock Text="Verde=valid  Roșu=invalid(I)"
                            Style="{StaticResource PanelLabel}" Margin="0,0,0,6"/>
                 <ItemsControl ItemsSource="{Binding Registers}">
                     <ItemsControl.ItemTemplate>

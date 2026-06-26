@@ -31,9 +31,23 @@ public class AssemblerTests
     }
 
     [Fact]
-    public void MovLoadAI()
+    public void AddImmediateEncodesCorrectly()
     {
-        var result = _asm.Assemble("MOV R1,(R8)", 0);
+        var result = _asm.Assemble("ADD R1,R2,#3", 0);
+        Assert.Equal(2, result.Words.Count);
+        var (_, instr) = result.Instructions[0];
+        Assert.Equal(Opcode.ADD, instr.Op);
+        Assert.Equal(1, instr.Rd);
+        Assert.Equal(2, instr.Rs1);
+        Assert.Equal(3, instr.Immediate);
+        Assert.Equal(AddressingMode.AM, instr.SourceMode);
+    }
+
+    [Fact]
+    public void LdLoadAI()
+    {
+        var result = _asm.Assemble("LD R1,(R8)", 0);
+        Assert.Single(result.Words);
         var (_, instr) = result.Instructions[0];
         Assert.True(instr.IsLoad);
         Assert.False(instr.IsStore);
@@ -43,9 +57,9 @@ public class AssemblerTests
     }
 
     [Fact]
-    public void MovLoadAX()
+    public void LdLoadAX()
     {
-        var result = _asm.Assemble("MOV R1,16(R8)", 0);
+        var result = _asm.Assemble("LD R1,16(R8)", 0);
         Assert.Equal(2, result.Words.Count);
         var (_, instr) = result.Instructions[0];
         Assert.True(instr.IsLoad);
@@ -56,9 +70,10 @@ public class AssemblerTests
     }
 
     [Fact]
-    public void MovStoreAI()
+    public void StStoreAI()
     {
-        var result = _asm.Assemble("MOV (R8),R1", 0);
+        var result = _asm.Assemble("ST (R8),R1", 0);
+        Assert.Single(result.Words);
         var (_, instr) = result.Instructions[0];
         Assert.True(instr.IsStore);
         Assert.False(instr.IsLoad);
@@ -81,11 +96,13 @@ public class AssemblerTests
     [Fact]
     public void LabelResolution()
     {
-        string src = "L1:\nNOP\nNOP\nBEQ L1";
+        string src = "L1:\nNOP\nNOP\nBEQ R1,R2,L1";
         var result = _asm.Assemble(src, 0);
         var branchInstr = result.Instructions.Last().Instr;
         Assert.Equal(Opcode.BEQ, branchInstr.Op);
-        Assert.Equal(-3, branchInstr.Offset);
+        Assert.Equal(1, branchInstr.Rs1);
+        Assert.Equal(2, branchInstr.Rs2);
+        Assert.Equal(-4, branchInstr.Offset);
     }
 
     [Fact]
@@ -97,26 +114,38 @@ public class AssemblerTests
     }
 
     [Fact]
-    public void BranchOffsetTooLargeThrows()
+    public void BranchLargeOffsetAssembles()
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("L1:");
         for (int i = 0; i < 200; i++) sb.AppendLine("NOP");
-        sb.AppendLine("BEQ L1");
-        Assert.Throws<AssemblerException>(() => _asm.Assemble(sb.ToString(), 0));
+        sb.AppendLine("BEQ R1,R2,L1");
+        var result = _asm.Assemble(sb.ToString(), 0);
+        var branchInstr = result.Instructions.Last().Instr;
+        Assert.Equal(Opcode.BEQ, branchInstr.Op);
+        Assert.True(branchInstr.Offset < 0, "Offset trebuie să fie negativ (salt înapoi)");
     }
 
     [Fact]
-    public void CmpEncodesCorrectly()
+    public void BeqEncodesWithTwoRegisters()
     {
-        var result = _asm.Assemble("CMP R1,R2", 0);
-        Assert.Single(result.Words);
+        var result = _asm.Assemble("BEQ R3,R5,0", 0);
+        Assert.Equal(2, result.Words.Count);
         var (_, instr) = result.Instructions[0];
-        Assert.Equal(Opcode.CMP, instr.Op);
-        Assert.Equal(InstructionClass.Class1, instr.Class);
-        Assert.Equal(1, instr.Rs1);
-        Assert.Equal(2, instr.Rs2);
-        Assert.Equal(0, instr.Rd);
+        Assert.Equal(Opcode.BEQ, instr.Op);
+        Assert.Equal(InstructionClass.Class3, instr.Class);
+        Assert.Equal(3, instr.Rs1);
+        Assert.Equal(5, instr.Rs2);
+    }
+
+    [Fact]
+    public void JalSavesInR31()
+    {
+        var result = _asm.Assemble("JAL 200h", 0);
+        var (_, instr) = result.Instructions[0];
+        Assert.Equal(Opcode.JAL, instr.Op);
+        Assert.Equal(31, instr.Rd);
+        Assert.Equal(0x200, instr.Immediate);
     }
 
     [Fact]
@@ -136,5 +165,15 @@ public class AssemblerTests
         Assert.Equal(0x100, result.Instructions[0].Address);
         Assert.Equal(0x101, result.Instructions[1].Address);
         Assert.Equal(0x102, result.Instructions[2].Address);
+    }
+
+    [Fact]
+    public void Register32Allowed()
+    {
+        var result = _asm.Assemble("ADD R31,R30,R29", 0);
+        var (_, instr) = result.Instructions[0];
+        Assert.Equal(31, instr.Rd);
+        Assert.Equal(30, instr.Rs1);
+        Assert.Equal(29, instr.Rs2);
     }
 }

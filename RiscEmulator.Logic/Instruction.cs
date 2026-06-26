@@ -13,18 +13,14 @@ public class Instruction
     public int Offset { get; set; }
     public int OriginAddress { get; set; }
 
-    public bool IsLoad =>
-        Op == Opcode.MOV &&
-        (SourceMode == AddressingMode.AI || SourceMode == AddressingMode.AX);
+    public bool IsLoad => Op == Opcode.LD;
 
-    public bool IsStore =>
-        Op == Opcode.MOV &&
-        (DestMode == AddressingMode.AI || DestMode == AddressingMode.AX);
+    public bool IsStore => Op == Opcode.ST;
 
     public bool IsAlu =>
         Class == InstructionClass.Class1 && !IsLoad && !IsStore;
 
-    public bool IsJump => Op == Opcode.JMP || Op == Opcode.CALL;
+    public bool IsJump => Op == Opcode.JMP || Op == Opcode.JAL;
 
     public bool IsBranch =>
         Class == InstructionClass.Class3;
@@ -58,24 +54,36 @@ public class Instruction
                     string src = SourceMode == AddressingMode.AI
                         ? $"(R{Rs1})"
                         : $"{Immediate}(R{Rs1})";
-                    return $"MOV R{Rd},{src}";
+                    return $"LD R{Rd},{src}";
                 }
                 if (IsStore)
                 {
                     string dst = DestMode == AddressingMode.AI
                         ? $"(R{Rd})"
                         : $"{Immediate}(R{Rd})";
-                    return $"MOV {dst},R{Rs1}";
+                    return $"ST {dst},R{Rs1}";
                 }
+                if (SourceMode == AddressingMode.AM)
+                    return $"{Op} R{Rd},R{Rs1},#{Immediate}";
                 if (InstructionSet.ReadsRs2(Op))
                     return $"{Op} R{Rd},R{Rs1},R{Rs2}";
                 return $"{Op} R{Rd},R{Rs1}";
 
             case InstructionClass.Class2:
+                if (Op == Opcode.JAL)
+                {
+                    if (SourceMode == AddressingMode.AM)
+                        return $"JAL 0x{Immediate:X}";
+                    return $"JAL (R{Rs1})";
+                }
+                if (SourceMode == AddressingMode.AM)
+                    return $"{Op} 0x{Immediate:X}";
+                if (SourceMode == AddressingMode.AI)
+                    return $"{Op} (R{Rs1})";
                 return $"{Op} R{Rs1}";
 
             case InstructionClass.Class3:
-                return $"{Op} {Offset:+0;-0;0}";
+                return $"{Op} R{Rs1},R{Rs2},{Offset:+0;-0;0}";
 
             default:
                 return Op.ToString();

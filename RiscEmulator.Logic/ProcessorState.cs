@@ -30,11 +30,6 @@ public class ProcessorState
     public int B { get; set; }
     public int C { get; set; }
 
-    public bool FlagZ { get; set; }
-    public bool FlagC { get; set; }
-    public bool FlagS { get; set; }
-    public bool FlagO { get; set; }
-
     public RegisterFile Registers { get; } = new RegisterFile();
     public Memory Memory { get; } = new Memory();
 
@@ -56,7 +51,6 @@ public class ProcessorState
     {
         PC = 0; MAR = 0; MDR = 0; IR = 0;
         A = 0; B = 0; C = 0;
-        FlagZ = false; FlagC = false; FlagS = false; FlagO = false;
         Registers.Reset();
         Memory.Reset();
         for (int i = 0; i < 5; i++)

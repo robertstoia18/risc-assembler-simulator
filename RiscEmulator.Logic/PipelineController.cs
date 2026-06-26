@@ -104,7 +104,7 @@ public class PipelineController
         if (instr == null || instr.IsNop) return false;
 
         bool rs1Needed = InstructionSet.ReadsRs1(instr.Op);
-        bool rs2Needed = InstructionSet.ReadsRs2(instr.Op);
+        bool rs2Needed = InstructionSet.ReadsRs2(instr.Op) && instr.SourceMode != AddressingMode.AM;
 
         bool rs1Valid = !rs1Needed || State.Registers.IsValid(instr.Rs1);
         bool rs2Valid = !rs2Needed || State.Registers.IsValid(instr.Rs2);
@@ -121,7 +121,7 @@ public class PipelineController
 
         int a = rs1Needed ? ResolveOperand(instr.Rs1, instr) : 0;
         int b = rs2Needed ? ResolveOperand(instr.Rs2, instr) : 0;
-        int c = (instr.IsStore) ? ResolveOperand(instr.Rs1, instr) : 0;
+        int c = 0;
 
         if (instr.IsStore)
         {
@@ -224,9 +224,15 @@ public class PipelineController
             if (instr.SourceMode == AddressingMode.AM)
                 State.PC = instr.Immediate;
             else if (instr.SourceMode == AddressingMode.AI)
-                State.PC = State.Registers.Read(instr.Rs1);
+                State.PC = slot.A;
             else if (instr.SourceMode == AddressingMode.AX)
-                State.PC = State.Registers.Read(instr.Rs1) + instr.Immediate;
+                State.PC = slot.A + instr.Immediate;
+
+            if (instr.Op == Opcode.JAL)
+            {
+                int returnAddr = instr.OriginAddress + InstructionSet.GetWordCount(instr);
+                slot.C = returnAddr;
+            }
 
             FlushIF();
             FlushOF();
@@ -235,8 +241,8 @@ public class PipelineController
 
         if (instr.IsBranch)
         {
-            bool condition = EvalBranchCondition(instr.Op);
-            int target = instr.OriginAddress + 1 + instr.Offset;
+            bool condition = EvalBranchCondition(instr.Op, slot.A, slot.B);
+            int target = instr.OriginAddress + InstructionSet.GetWordCount(instr) + instr.Offset;
             slot.BranchTaken = condition;
             slot.BranchTarget = target;
 
@@ -252,9 +258,6 @@ public class PipelineController
         int result = AluOp(instr.Op, a, b, instr.Immediate, instr.SourceMode);
         slot.C = result;
         State.C = result;
-
-        if (instr.Op == Opcode.CMP)
-            SetFlags(a, b);
     }
 
     private void StageIF()
@@ -275,7 +278,7 @@ public class PipelineController
         State.IR = State.Memory.Read(pc);
         State.MDR = State.IR;
 
-        int wordsUsed = CountWords(instr);
+        int wordsUsed = InstructionSet.GetWordCount(instr);
         State.PC = pc + wordsUsed;
 
         State.IF.Instruction = instr;
@@ -332,47 +335,19 @@ public class PipelineController
             case Opcode.AND: return a & operandB;
             case Opcode.OR:  return a | operandB;
             case Opcode.XOR: return a ^ operandB;
-            case Opcode.MOV: return operandB;
-            case Opcode.CMP: return a - operandB;
             default:         return 0;
         }
     }
 
-    private void SetFlags(int a, int b)
-    {
-        int result = a - b;
-        State.FlagZ = result == 0;
-        State.FlagS = result < 0;
-        State.FlagC = (uint)a < (uint)b;
-        State.FlagO = ((a ^ b) & (a ^ result) & 0x80000000) != 0;
-    }
-
-    private bool EvalBranchCondition(Opcode op)
+    private bool EvalBranchCondition(Opcode op, int a, int b)
     {
         switch (op)
         {
-            case Opcode.BR:  return true;
-            case Opcode.BEQ: return State.FlagZ;
-            case Opcode.BNE: return !State.FlagZ;
-            case Opcode.BPL: return !State.FlagS;
-            case Opcode.BMI: return State.FlagS;
-            case Opcode.BCS: return State.FlagC;
-            case Opcode.BCC: return !State.FlagC;
-            case Opcode.BVS: return State.FlagO;
-            case Opcode.BVC: return !State.FlagO;
+            case Opcode.BEQ: return a == b;
+            case Opcode.BNE: return a != b;
+            case Opcode.BL:  return a < b;
+            case Opcode.BGE: return a >= b;
             default:         return false;
         }
-    }
-
-    private int CountWords(Instruction instr)
-    {
-        if (instr.SourceMode == AddressingMode.AX || instr.DestMode == AddressingMode.AX)
-            return 2;
-        if (instr.Class == InstructionClass.Class2)
-        {
-            if (instr.SourceMode == AddressingMode.AM || instr.SourceMode == AddressingMode.AX)
-                return 2;
-        }
-        return 1;
     }
 }

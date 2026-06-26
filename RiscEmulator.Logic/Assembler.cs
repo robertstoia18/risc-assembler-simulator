@@ -122,14 +122,18 @@ public class Assembler
                 return (instr, new List<int> { EncodeClass4(0b0010, 0) });
             }
 
+            case "LD":
+                return EncodeLD(operands, lineNum);
+
+            case "ST":
+                return EncodeST(operands, lineNum);
+
             case "ADD":
             case "SUB":
             case "AND":
             case "OR":
             case "XOR":
-            case "CMP":
-            case "MOV":
-                return EncodeClass1(mnem, operands, currentAddress, labels, lineNum);
+                return EncodeAlu(mnem, operands, lineNum);
 
             case "CLR":
             case "NEG":
@@ -145,18 +149,13 @@ public class Assembler
             case "PUSH":
             case "POP":
             case "JMP":
-            case "CALL":
-                return EncodeClass2(mnem, operands, currentAddress, labels, lineNum);
+            case "JAL":
+                return EncodeClass2(mnem, operands, lineNum);
 
-            case "BR":
             case "BNE":
             case "BEQ":
-            case "BPL":
-            case "BMI":
-            case "BCS":
-            case "BCC":
-            case "BVS":
-            case "BVC":
+            case "BL":
+            case "BGE":
                 return EncodeClass3(mnem, operands, currentAddress, labels, lineNum);
 
             default:
@@ -164,120 +163,150 @@ public class Assembler
         }
     }
 
-    private (Instruction, List<int>) EncodeClass1(string mnem, string operands, int addr, Dictionary<string, int> labels, int lineNum)
+    private (Instruction, List<int>) EncodeLD(string operands, int lineNum)
     {
-        var op = Enum.Parse<Opcode>(mnem, true);
-        var instr = new Instruction { Op = op, Class = InstructionClass.Class1 };
-
         var ops = SplitOperands(operands);
-
-        if (op == Opcode.MOV)
-            return EncodeMov(ops, instr, lineNum);
-
-        if (op == Opcode.CMP)
-        {
-            if (ops.Length < 2)
-                throw new AssemblerException(lineNum, "CMP necesită 2 operanzi: Rs1, Rs2");
-            instr.Rs1 = ParseRegister(ops[0], lineNum);
-            instr.Rs2 = ParseRegister(ops[1], lineNum);
-            instr.Rd = 0;
-            instr.SourceMode = AddressingMode.AD;
-            instr.DestMode = AddressingMode.AD;
-            int cmpWord = (InstructionSet.GetClass1Opcode(Opcode.CMP) << 12)
-                        | ((int)AddressingMode.AD << 10)
-                        | (instr.Rs1 << 6)
-                        | ((int)AddressingMode.AD << 4)
-                        | instr.Rs2;
-            return (instr, new List<int> { cmpWord });
-        }
-
-        if (ops.Length < 3)
-            throw new AssemblerException(lineNum, $"{mnem} necesită 3 operanzi: Rd, Rs1, Rs2");
-
-        instr.Rd = ParseRegister(ops[0], lineNum);
-        instr.Rs1 = ParseRegister(ops[1], lineNum);
-        instr.Rs2 = ParseRegister(ops[2], lineNum);
-        instr.SourceMode = AddressingMode.AD;
-        instr.DestMode = AddressingMode.AD;
-
-        int word = (InstructionSet.GetClass1Opcode(op) << 12)
-                 | ((int)instr.SourceMode << 10)
-                 | (instr.Rs1 << 6)
-                 | ((int)instr.DestMode << 4)
-                 | instr.Rd;
-
-        return (instr, new List<int> { word });
-    }
-
-    private (Instruction, List<int>) EncodeMov(string[] ops, Instruction instr, int lineNum)
-    {
         if (ops.Length < 2)
-            throw new AssemblerException(lineNum, "MOV necesită 2 operanzi");
+            throw new AssemblerException(lineNum, "LD necesită 2 operanzi: Rd, (Rs) sau Rd, offset(Rs)");
 
         string dst = ops[0].Trim();
         string src = ops[1].Trim();
 
-        var words = new List<int>();
-
-        bool dstIsIndirect = dst.StartsWith('(') && dst.EndsWith(')');
-        bool dstIsIndexed = dst.Contains('(') && dst.EndsWith(')') && !dst.StartsWith('(');
         bool srcIsIndirect = src.StartsWith('(') && src.EndsWith(')');
         bool srcIsIndexed = src.Contains('(') && src.EndsWith(')') && !src.StartsWith('(');
+
+        if (!srcIsIndirect && !srcIsIndexed)
+            throw new AssemblerException(lineNum, "LD: sursa trebuie să fie indirectă: (Rs) sau offset(Rs)");
+
+        var instr = new Instruction { Op = Opcode.LD, Class = InstructionClass.Class1 };
+        instr.Rd = ParseRegister(dst, lineNum);
+        instr.DestMode = AddressingMode.AD;
+
+        var words = new List<int>();
 
         if (srcIsIndirect)
         {
             instr.SourceMode = AddressingMode.AI;
-            instr.DestMode = AddressingMode.AD;
             instr.Rs1 = ParseRegister(src[1..^1], lineNum);
-            instr.Rd = ParseRegister(dst, lineNum);
-        }
-        else if (srcIsIndexed)
-        {
-            instr.SourceMode = AddressingMode.AX;
-            instr.DestMode = AddressingMode.AD;
-            ParseIndexed(src, out int regIdx, out int imm, lineNum);
-            instr.Rs1 = regIdx;
-            instr.Rd = ParseRegister(dst, lineNum);
-            instr.Immediate = imm;
-        }
-        else if (dstIsIndirect)
-        {
-            instr.SourceMode = AddressingMode.AD;
-            instr.DestMode = AddressingMode.AI;
-            instr.Rs1 = ParseRegister(src, lineNum);
-            instr.Rd = ParseRegister(dst[1..^1], lineNum);
-        }
-        else if (dstIsIndexed)
-        {
-            instr.SourceMode = AddressingMode.AD;
-            instr.DestMode = AddressingMode.AX;
-            ParseIndexed(dst, out int regIdx, out int imm, lineNum);
-            instr.Rd = regIdx;
-            instr.Rs1 = ParseRegister(src, lineNum);
-            instr.Immediate = imm;
         }
         else
         {
-            instr.SourceMode = AddressingMode.AD;
-            instr.DestMode = AddressingMode.AD;
-            instr.Rs1 = ParseRegister(src, lineNum);
-            instr.Rd = ParseRegister(dst, lineNum);
+            instr.SourceMode = AddressingMode.AX;
+            ParseIndexed(src, out int reg, out int imm, lineNum);
+            instr.Rs1 = reg;
+            instr.Immediate = imm;
         }
 
-        int word = (InstructionSet.GetClass1Opcode(Opcode.MOV) << 12)
+        int word = (InstructionSet.GetClass1Opcode(Opcode.LD) << 12)
                  | ((int)instr.SourceMode << 10)
                  | (instr.Rs1 << 6)
                  | ((int)instr.DestMode << 4)
-                 | instr.Rd;
+                 | (instr.Rd & 0xF);
         words.Add(word);
 
-        if (instr.SourceMode == AddressingMode.AX || instr.DestMode == AddressingMode.AX)
+        if (instr.SourceMode == AddressingMode.AX)
             words.Add(instr.Immediate & 0xFFFF);
 
         return (instr, words);
     }
 
-    private (Instruction, List<int>) EncodeClass2(string mnem, string operands, int addr, Dictionary<string, int> labels, int lineNum)
+    private (Instruction, List<int>) EncodeST(string operands, int lineNum)
+    {
+        var ops = SplitOperands(operands);
+        if (ops.Length < 2)
+            throw new AssemblerException(lineNum, "ST necesită 2 operanzi: (Rd) sau offset(Rd), Rs");
+
+        string dst = ops[0].Trim();
+        string src = ops[1].Trim();
+
+        bool dstIsIndirect = dst.StartsWith('(') && dst.EndsWith(')');
+        bool dstIsIndexed = dst.Contains('(') && dst.EndsWith(')') && !dst.StartsWith('(');
+
+        if (!dstIsIndirect && !dstIsIndexed)
+            throw new AssemblerException(lineNum, "ST: destinația trebuie să fie indirectă: (Rd) sau offset(Rd)");
+
+        var instr = new Instruction { Op = Opcode.ST, Class = InstructionClass.Class1 };
+        instr.Rs1 = ParseRegister(src, lineNum);
+        instr.SourceMode = AddressingMode.AD;
+
+        var words = new List<int>();
+
+        if (dstIsIndirect)
+        {
+            instr.DestMode = AddressingMode.AI;
+            instr.Rd = ParseRegister(dst[1..^1], lineNum);
+        }
+        else
+        {
+            instr.DestMode = AddressingMode.AX;
+            ParseIndexed(dst, out int reg, out int imm, lineNum);
+            instr.Rd = reg;
+            instr.Immediate = imm;
+        }
+
+        int word = (InstructionSet.GetClass1Opcode(Opcode.ST) << 12)
+                 | ((int)instr.SourceMode << 10)
+                 | (instr.Rs1 << 6)
+                 | ((int)instr.DestMode << 4)
+                 | (instr.Rd & 0xF);
+        words.Add(word);
+
+        if (instr.DestMode == AddressingMode.AX)
+            words.Add(instr.Immediate & 0xFFFF);
+
+        return (instr, words);
+    }
+
+    private (Instruction, List<int>) EncodeAlu(string mnem, string operands, int lineNum)
+    {
+        var op = Enum.Parse<Opcode>(mnem, true);
+        var instr = new Instruction { Op = op, Class = InstructionClass.Class1 };
+        var ops = SplitOperands(operands);
+
+        if (ops.Length < 3)
+            throw new AssemblerException(lineNum, $"{mnem} necesită 3 operanzi: Rd, Rs1, Rs2 sau Rd, Rs1, #imm");
+
+        instr.Rd = ParseRegister(ops[0], lineNum);
+        instr.Rs1 = ParseRegister(ops[1], lineNum);
+
+        string third = ops[2].Trim();
+        var words = new List<int>();
+
+        if (third.StartsWith('#'))
+        {
+            if (!TryParseNumber(third[1..], out int imm))
+                throw new AssemblerException(lineNum, $"Valoare imediată invalidă: '{third}'");
+            instr.SourceMode = AddressingMode.AM;
+            instr.DestMode = AddressingMode.AD;
+            instr.Immediate = imm;
+            instr.Rs2 = 0;
+
+            int word = (InstructionSet.GetClass1Opcode(op) << 12)
+                     | ((int)AddressingMode.AM << 10)
+                     | (instr.Rs1 << 6)
+                     | ((int)AddressingMode.AD << 4)
+                     | (instr.Rd & 0xF);
+            words.Add(word);
+            words.Add(imm & 0xFFFF);
+        }
+        else
+        {
+            instr.Rs2 = ParseRegister(third, lineNum);
+            instr.SourceMode = AddressingMode.AD;
+            instr.DestMode = AddressingMode.AD;
+
+            int word = (InstructionSet.GetClass1Opcode(op) << 12)
+                     | ((int)AddressingMode.AD << 10)
+                     | (instr.Rs1 << 6)
+                     | ((int)AddressingMode.AD << 4)
+                     | (instr.Rd & 0xF);
+            words.Add(word);
+        }
+
+        return (instr, words);
+    }
+
+    private (Instruction, List<int>) EncodeClass2(string mnem, string operands, int lineNum)
     {
         var op = Enum.Parse<Opcode>(mnem, true);
         var instr = new Instruction { Op = op, Class = InstructionClass.Class2 };
@@ -289,8 +318,11 @@ public class Assembler
         int immediate = 0;
         var words = new List<int>();
 
-        if (op == Opcode.JMP || op == Opcode.CALL)
+        if (op == Opcode.JMP || op == Opcode.JAL)
         {
+            if (op == Opcode.JAL)
+                instr.Rd = 31;
+
             if (ops.Length < 1 || string.IsNullOrWhiteSpace(ops[0]))
                 throw new AssemblerException(lineNum, $"{mnem} necesită un operand (adresă/etichetă)");
 
@@ -306,7 +338,7 @@ public class Assembler
                 mode = AddressingMode.AX;
                 ParseIndexed(target, out regOrTarget, out immediate, lineNum);
             }
-            else if (TryParseImmediate(target, labels, addr, out int immVal))
+            else if (TryParseImmediate(target, new Dictionary<string, int>(), 0, out int immVal))
             {
                 mode = AddressingMode.AM;
                 immediate = immVal;
@@ -363,15 +395,20 @@ public class Assembler
         var instr = new Instruction { Op = op, Class = InstructionClass.Class3 };
 
         var ops = SplitOperands(operands);
-        if (ops.Length < 1 || string.IsNullOrWhiteSpace(ops[0]))
-            throw new AssemblerException(lineNum, $"{mnem} necesită un operand (offset sau etichetă)");
+        if (ops.Length < 3)
+            throw new AssemblerException(lineNum, $"{mnem} necesită 3 operanzi: Rs1, Rs2, etichetă/offset");
 
-        string target = ops[0].Trim();
+        instr.Rs1 = ParseRegister(ops[0], lineNum);
+        instr.Rs2 = ParseRegister(ops[1], lineNum);
+        instr.SourceMode = AddressingMode.AD;
+
+        string target = ops[2].Trim();
         int offset;
+        int branchSize = 2;
 
         if (labels.TryGetValue(target, out int targetAddr))
         {
-            offset = targetAddr - (addr + 1);
+            offset = targetAddr - (addr + branchSize);
         }
         else if (TryParseImmediate(target, labels, addr, out int immVal))
         {
@@ -382,14 +419,14 @@ public class Assembler
             throw new AssemblerException(lineNum, $"Operand invalid pentru {mnem}: '{target}'");
         }
 
-        if (offset < -128 || offset > 127)
-            throw new AssemblerException(lineNum,
-                $"Offset {offset} depășește intervalul [-128,127] pentru branch scurt. Folosiți JMP sau mutați eticheta mai aproape.");
-
         instr.Offset = offset;
 
-        int word = (InstructionSet.GetClass3Opcode(op) << 8) | (offset & 0xFF);
-        return (instr, new List<int> { word });
+        int word1 = (InstructionSet.GetClass3Opcode(op) << 8)
+                  | ((instr.Rs1 & 0xF) << 4)
+                  | (instr.Rs2 & 0xF);
+        int word2 = offset & 0xFFFF;
+
+        return (instr, new List<int> { word1, word2 });
     }
 
     private int CountWords(string line, int lineNum)
@@ -404,34 +441,42 @@ public class Assembler
             case "HALT":
             case "RET":
             case "RETI":
-            case "CLC": case "CLV": case "CLZ": case "CLS": case "CCC":
-            case "SEC": case "SEV": case "SEZ": case "SES": case "SCC":
                 return 1;
 
-            case "BR": case "BNE": case "BEQ": case "BPL": case "BMI":
-            case "BCS": case "BCC": case "BVS": case "BVC":
-                return 1;
+            case "BNE": case "BEQ": case "BL": case "BGE":
+                return 2;
 
-            case "ADD": case "SUB": case "AND": case "OR": case "XOR": case "CMP":
+            case "ADD": case "SUB": case "AND": case "OR": case "XOR":
+            {
+                var ops = SplitOperands(operands);
+                if (ops.Length >= 3 && ops[2].Trim().StartsWith('#'))
+                    return 2;
                 return 1;
+            }
 
-            case "MOV":
+            case "LD":
             {
                 var ops = SplitOperands(operands);
                 if (ops.Length < 2) return 1;
-                string dst = ops[0].Trim();
                 string src = ops[1].Trim();
-                bool hasExtra = (src.Contains('(') && src.EndsWith(')') && !src.StartsWith('('))
-                             || (dst.Contains('(') && dst.EndsWith(')') && !dst.StartsWith('('));
-                return hasExtra ? 2 : 1;
+                bool isIndexed = src.Contains('(') && src.EndsWith(')') && !src.StartsWith('(');
+                return isIndexed ? 2 : 1;
             }
 
-            case "JMP": case "CALL":
+            case "ST":
+            {
+                var ops = SplitOperands(operands);
+                if (ops.Length < 1) return 1;
+                string dst = ops[0].Trim();
+                bool isIndexed = dst.Contains('(') && dst.EndsWith(')') && !dst.StartsWith('(');
+                return isIndexed ? 2 : 1;
+            }
+
+            case "JMP": case "JAL":
             {
                 var ops = SplitOperands(operands);
                 if (ops.Length < 1) return 1;
                 string t = ops[0].Trim();
-                bool hasExtra = !t.StartsWith('(') || !t.EndsWith(')');
                 if (t.Contains('(') && t.EndsWith(')') && !t.StartsWith('('))
                     return 2;
                 if (!t.StartsWith('('))
@@ -449,9 +494,9 @@ public class Assembler
         s = s.Trim();
         if (s.StartsWith("R", StringComparison.OrdinalIgnoreCase) && int.TryParse(s[1..], out int idx))
         {
-            if (idx >= 0 && idx <= 15) return idx;
+            if (idx >= 0 && idx <= 31) return idx;
         }
-        throw new AssemblerException(lineNum, $"Registru invalid: '{s}'");
+        throw new AssemblerException(lineNum, $"Registru invalid: '{s}' (valid R0-R31)");
     }
 
     private void ParseIndexed(string s, out int reg, out int imm, int lineNum)

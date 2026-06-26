@@ -21,7 +21,7 @@ public class RegisterViewModel : BaseViewModel
     }
 
     public string DisplayValue => $"{_value} (0x{_value:X4})";
-    public string StatusLabel => _isValid ? "V" : "B";
+    public string StatusLabel => _isValid ? "V" : "I";
 
     public RegisterViewModel(int index)
     {
