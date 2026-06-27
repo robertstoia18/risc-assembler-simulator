@@ -117,10 +117,10 @@ public class Assembler
                 return (Instruction.MakeNop(), new List<int> { EncodeClass4(0b0001, 0) });
 
             case "HALT":
-            {
-                var instr = new Instruction { Op = Opcode.HALT, Class = InstructionClass.Class4 };
-                return (instr, new List<int> { EncodeClass4(0b0010, 0) });
-            }
+                {
+                    var instr = new Instruction { Op = Opcode.HALT, Class = InstructionClass.Class4 };
+                    return (instr, new List<int> { EncodeClass4(0b0010, 0) });
+                }
 
             case "LD":
                 return EncodeLD(operands, lineNum);
@@ -150,7 +150,7 @@ public class Assembler
             case "POP":
             case "JMP":
             case "JAL":
-                return EncodeClass2(mnem, operands, lineNum);
+                return EncodeClass2(mnem, operands, labels, lineNum);
 
             case "BNE":
             case "BEQ":
@@ -306,7 +306,8 @@ public class Assembler
         return (instr, words);
     }
 
-    private (Instruction, List<int>) EncodeClass2(string mnem, string operands, int lineNum)
+
+    private (Instruction, List<int>) EncodeClass2(string mnem, string operands, Dictionary<string, int> labels, int lineNum)
     {
         var op = Enum.Parse<Opcode>(mnem, true);
         var instr = new Instruction { Op = op, Class = InstructionClass.Class2 };
@@ -333,19 +334,24 @@ public class Assembler
                 mode = AddressingMode.AI;
                 regOrTarget = ParseRegister(target[1..^1], lineNum);
             }
-            else if (target.Contains('(') && target.EndsWith(')'))
+            else if (target.Contains('(') && target.EndsWith(')') && !target.StartsWith('('))
             {
                 mode = AddressingMode.AX;
                 ParseIndexed(target, out regOrTarget, out immediate, lineNum);
             }
-            else if (TryParseImmediate(target, new Dictionary<string, int>(), 0, out int immVal))
+            else if (labels.TryGetValue(target, out int labelAddr))
+            {
+                mode = AddressingMode.AM;
+                immediate = labelAddr;
+            }
+            else if (TryParseNumber(target, out int immVal))
             {
                 mode = AddressingMode.AM;
                 immediate = immVal;
             }
             else
             {
-                throw new AssemblerException(lineNum, $"Operand invalid pentru {mnem}: '{target}'");
+                throw new AssemblerException(lineNum, $"Operand invalid pentru {mnem}: '{target}' (etichetă negăsită sau număr invalid)");
             }
 
             instr.Rs1 = regOrTarget;
@@ -410,7 +416,7 @@ public class Assembler
         {
             offset = targetAddr - (addr + branchSize);
         }
-        else if (TryParseImmediate(target, labels, addr, out int immVal))
+        else if (TryParseNumber(target, out int immVal))
         {
             offset = immVal;
         }
