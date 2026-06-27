@@ -176,4 +176,39 @@ public class AssemblerTests
         Assert.Equal(30, instr.Rs1);
         Assert.Equal(29, instr.Rs2);
     }
+
+    [Fact]
+    public void MulEncodes_OneWord_RRR()
+    {
+        var result = _asm.Assemble("MUL R3,R1,R2", 0);
+        Assert.Single(result.Instructions);
+        Assert.Single(result.Words);
+        var (_, instr) = result.Instructions[0];
+        Assert.Equal(Opcode.MUL, instr.Op);
+        Assert.Equal(3, instr.Rd);
+        Assert.Equal(1, instr.Rs1);
+        Assert.Equal(2, instr.Rs2);
+        Assert.Equal(InstructionClass.Class1, instr.Class);
+    }
+
+    [Fact]
+    public void RetEncodes_OneWord_NoOperands()
+    {
+        var result = _asm.Assemble("RET", 0);
+        Assert.Single(result.Instructions);
+        Assert.Single(result.Words);
+        var (_, instr) = result.Instructions[0];
+        Assert.Equal(Opcode.RET, instr.Op);
+        Assert.Equal(InstructionClass.Class2, instr.Class);
+    }
+
+    [Fact]
+    public void IncEncodes_OneWord_Class2()
+    {
+        var result = _asm.Assemble("INC R5", 0);
+        Assert.Single(result.Instructions);
+        var (_, instr) = result.Instructions[0];
+        Assert.Equal(Opcode.INC, instr.Op);
+        Assert.Equal(5, instr.Rs1);
+    }
 }

@@ -17,6 +17,7 @@ public class MainViewModel : BaseViewModel
     private int _pc, _mar, _mdr, _ir, _regA, _regB, _regC;
 
     public ObservableCollection<PipelineSlotViewModel> PipelineSlots { get; } = new();
+    public ObservableCollection<FunctionalUnitViewModel> Units { get; } = new();
     public ObservableCollection<RegisterViewModel> Registers { get; } = new();
     public ObservableCollection<MemoryRowViewModel> MemoryRows { get; } = new();
 
@@ -57,14 +58,18 @@ public class MainViewModel : BaseViewModel
     public ICommand LoadProgramCommand { get; }
     public ICommand ResetCommand { get; }
 
-    private static readonly string[] StageNames = { "IF", "DEC/OF", "EX", "MEM", "WB" };
+    private static readonly string[] SlotNames = { "IF", "DEC/OF" };
+    private static readonly string[] UnitNames = { "ALU", "MUL", "LD/ST", "JMP" };
 
     public MainViewModel()
     {
         _ctrl = new PipelineController(_state);
 
-        for (int i = 0; i < 5; i++)
-            PipelineSlots.Add(new PipelineSlotViewModel { StageName = StageNames[i] });
+        for (int i = 0; i < 2; i++)
+            PipelineSlots.Add(new PipelineSlotViewModel { StageName = SlotNames[i] });
+
+        for (int i = 0; i < 4; i++)
+            Units.Add(new FunctionalUnitViewModel { UnitName = UnitNames[i] });
 
         for (int i = 0; i < 32; i++)
             Registers.Add(new RegisterViewModel(i));
@@ -145,7 +150,7 @@ public class MainViewModel : BaseViewModel
         RegC = _state.C;
         CycleCount = _ctrl.CycleCount;
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 2; i++)
         {
             var slot = _ctrl.DisplaySlots[i];
             var vm = PipelineSlots[i];
@@ -164,11 +169,30 @@ public class MainViewModel : BaseViewModel
                 PipelineSlots[(int)PipelineStage.OF].HasForwarding = true;
         }
 
+        for (int i = 0; i < 4; i++)
+        {
+            var unit = _ctrl.DisplayUnits[i];
+            var vm = Units[i];
+            UpdateSlotVm(vm.EX, unit.ExSlot);
+            UpdateSlotVm(vm.MEM, unit.MemSlot);
+            UpdateSlotVm(vm.WB, unit.WbSlot);
+        }
+
         for (int i = 0; i < 32; i++)
         {
             Registers[i].Value = _state.Registers.GetValue(i);
             Registers[i].IsValid = _state.Registers.GetValid(i);
         }
+    }
+
+    private static void UpdateSlotVm(PipelineSlotViewModel vm, RiscEmulator.Logic.PipelineSlot slot)
+    {
+        vm.InstructionLabel = slot.Instruction?.ToString() ?? "NOP";
+        vm.IsStall = slot.IsStall;
+        vm.A = slot.A;
+        vm.B = slot.B;
+        vm.C = slot.C;
+        vm.MAR = slot.MAR;
     }
 
     private void RefreshMemoryWindow()

@@ -135,6 +135,9 @@ public class Assembler
             case "XOR":
                 return EncodeAlu(mnem, operands, lineNum);
 
+            case "MUL":
+                return EncodeMul(operands, lineNum);
+
             case "CLR":
             case "NEG":
             case "INC":
@@ -150,6 +153,8 @@ public class Assembler
             case "POP":
             case "JMP":
             case "JAL":
+            case "RET":
+            case "RETI":
                 return EncodeClass2(mnem, operands, labels, lineNum);
 
             case "BNE":
@@ -307,6 +312,27 @@ public class Assembler
     }
 
 
+    private (Instruction, List<int>) EncodeMul(string operands, int lineNum)
+    {
+        var ops = SplitOperands(operands);
+        if (ops.Length < 3)
+            throw new AssemblerException(lineNum, "MUL necesită 3 operanzi: Rd, Rs1, Rs2");
+
+        var instr = new Instruction { Op = Opcode.MUL, Class = InstructionClass.Class1 };
+        instr.Rd = ParseRegister(ops[0], lineNum);
+        instr.Rs1 = ParseRegister(ops[1], lineNum);
+        instr.Rs2 = ParseRegister(ops[2], lineNum);
+        instr.SourceMode = AddressingMode.AD;
+        instr.DestMode = AddressingMode.AD;
+
+        int word = (InstructionSet.GetClass1Opcode(Opcode.MUL) << 12)
+                 | ((int)AddressingMode.AD << 10)
+                 | (instr.Rs1 << 6)
+                 | ((int)AddressingMode.AD << 4)
+                 | (instr.Rd & 0xF);
+        return (instr, new List<int> { word });
+    }
+
     private (Instruction, List<int>) EncodeClass2(string mnem, string operands, Dictionary<string, int> labels, int lineNum)
     {
         var op = Enum.Parse<Opcode>(mnem, true);
@@ -366,6 +392,12 @@ public class Assembler
             if (mode == AddressingMode.AM || mode == AddressingMode.AX)
                 words.Add(immediate & 0xFFFF);
         }
+        else if (op == Opcode.RET || op == Opcode.RETI)
+        {
+            instr.SourceMode = AddressingMode.AD;
+            int w = (InstructionSet.GetClass2Opcode(op) << 6);
+            words.Add(w);
+        }
         else
         {
             if (ops.Length < 1 || string.IsNullOrWhiteSpace(ops[0]))
@@ -384,6 +416,7 @@ public class Assembler
             }
 
             instr.Rs1 = regOrTarget;
+            instr.Rd = regOrTarget;
             instr.SourceMode = mode;
 
             int w = (InstructionSet.GetClass2Opcode(op) << 6)
@@ -447,6 +480,8 @@ public class Assembler
             case "HALT":
             case "RET":
             case "RETI":
+            case "WAIT":
+            case "MUL":
                 return 1;
 
             case "BNE": case "BEQ": case "BL": case "BGE":

@@ -17,6 +17,8 @@ public class Instruction
 
     public bool IsStore => Op == Opcode.ST;
 
+    public bool IsMul => Op == Opcode.MUL;
+
     public bool IsAlu =>
         Class == InstructionClass.Class1 && !IsLoad && !IsStore;
 
@@ -63,6 +65,8 @@ public class Instruction
                         : $"{Immediate}(R{Rd})";
                     return $"ST {dst},R{Rs1}";
                 }
+                if (IsMul)
+                    return $"MUL R{Rd},R{Rs1},R{Rs2}";
                 if (SourceMode == AddressingMode.AM)
                     return $"{Op} R{Rd},R{Rs1},#{Immediate}";
                 if (InstructionSet.ReadsRs2(Op))
@@ -76,6 +80,8 @@ public class Instruction
                         return $"JAL 0x{Immediate:X}";
                     return $"JAL (R{Rs1})";
                 }
+                if (Op == Opcode.RET) return "RET";
+                if (Op == Opcode.RETI) return "RETI";
                 if (SourceMode == AddressingMode.AM)
                     return $"{Op} 0x{Immediate:X}";
                 if (SourceMode == AddressingMode.AI)

@@ -2,26 +2,20 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:RiscEmulator.UI.ViewModels"
-        Title="RISC 5-Stage Pipeline Simulator Architecture — AC" Height="900" Width="1440"
+        Title="RISC Pipeline Simulator — AC (Ext 1.0/1.1/1.2/1.3)" Height="900" Width="1500"
         Background="#0A0A0A" Foreground="#D4D4D4"
         WindowStartupLocation="CenterScreen">
 
 	<Window.Resources>
 		<BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
-		<Style x:Key="BusLabel" TargetType="TextBlock">
-			<Setter Property="Foreground" Value="#858585"/>
-			<Setter Property="FontSize" Value="10"/>
-			<Setter Property="FontFamily" Value="Consolas"/>
-		</Style>
-
 		<Style x:Key="StageTitle" TargetType="TextBlock">
 			<Setter Property="Foreground" Value="#569CD6"/>
-			<Setter Property="FontSize" Value="13"/>
+			<Setter Property="FontSize" Value="12"/>
 			<Setter Property="FontWeight" Value="Bold"/>
 			<Setter Property="FontFamily" Value="Segoe UI"/>
 			<Setter Property="HorizontalAlignment" Value="Center"/>
-			<Setter Property="Margin" Value="0,0,0,4"/>
+			<Setter Property="Margin" Value="0,0,0,3"/>
 		</Style>
 
 		<Style x:Key="HardwareValue" TargetType="TextBlock">
@@ -35,8 +29,8 @@
 			<Setter Property="Foreground" Value="#52B788"/>
 			<Setter Property="BorderBrush" Value="#2D6A4F"/>
 			<Setter Property="BorderThickness" Value="1"/>
-			<Setter Property="Padding" Value="14,7"/>
-			<Setter Property="FontSize" Value="12"/>
+			<Setter Property="Padding" Value="10,5"/>
+			<Setter Property="FontSize" Value="11"/>
 			<Setter Property="FontWeight" Value="Bold"/>
 			<Setter Property="Cursor" Value="Hand"/>
 			<Style.Triggers>
@@ -52,9 +46,8 @@
 			</Style.Triggers>
 		</Style>
 
-		<!-- Template pentru stagii pipeline -->
 		<DataTemplate x:Key="StageTemplate">
-			<Border Background="#161616" BorderBrush="#333" BorderThickness="1" Padding="6" CornerRadius="4" Margin="0,0,2,0">
+			<Border Background="#161616" BorderBrush="#333" BorderThickness="1" Padding="5" CornerRadius="3" Margin="0,0,2,0">
 				<Border.Style>
 					<Style TargetType="Border">
 						<Style.Triggers>
@@ -71,48 +64,37 @@
 				</Border.Style>
 				<StackPanel>
 					<TextBlock Text="{Binding StageName}" Style="{StaticResource StageTitle}"/>
-					<Separator Background="#222" Margin="0,2,0,4"/>
-
-					<Border Background="#244B66" Padding="4" CornerRadius="2" HorizontalAlignment="Center" Margin="0,0,0,6">
-						<TextBlock Text="{Binding InstructionLabel}" FontFamily="Consolas" FontSize="11" FontWeight="Bold" Foreground="White"/>
+					<Border Background="#244B66" Padding="3" CornerRadius="2" HorizontalAlignment="Center" Margin="0,0,0,4">
+						<TextBlock Text="{Binding InstructionLabel}" FontFamily="Consolas" FontSize="10" FontWeight="Bold" Foreground="White"/>
 					</Border>
-
-					<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
-						<Border Background="#C0392B" CornerRadius="2" Padding="3,1" Margin="2,0" Visibility="{Binding IsStall, Converter={StaticResource BoolToVis}}">
-							<TextBlock Text="STALL" Foreground="White" FontSize="8" FontWeight="Bold"/>
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,2">
+						<Border Background="#C0392B" CornerRadius="2" Padding="2,1" Margin="1,0"
+                                Visibility="{Binding IsStall, Converter={StaticResource BoolToVis}}">
+							<TextBlock Text="STALL" Foreground="White" FontSize="7" FontWeight="Bold"/>
 						</Border>
-						<Border Background="#F0C030" CornerRadius="2" Padding="3,1" Margin="2,0" Visibility="{Binding HasForwarding, Converter={StaticResource BoolToVis}}">
-							<TextBlock Text="FWD" Foreground="#111" FontSize="8" FontWeight="Bold"/>
+						<Border Background="#F0C030" CornerRadius="2" Padding="2,1" Margin="1,0"
+                                Visibility="{Binding HasForwarding, Converter={StaticResource BoolToVis}}">
+							<TextBlock Text="FWD" Foreground="#111" FontSize="7" FontWeight="Bold"/>
 						</Border>
 					</StackPanel>
-
-					<TextBlock Margin="0,6,0,0" FontSize="9" Foreground="#858585" FontFamily="Consolas" Text="A:"/>
-					<TextBlock Text="{Binding AHex}" Style="{StaticResource HardwareValue}" Margin="0,0,0,2"/>
-
-					<TextBlock FontSize="9" Foreground="#858585" FontFamily="Consolas" Text="B:"/>
-					<TextBlock Text="{Binding BHex}" Style="{StaticResource HardwareValue}" Margin="0,0,0,2"/>
-
-					<TextBlock FontSize="9" Foreground="#858585" FontFamily="Consolas" Text="C:"/>
-					<TextBlock Text="{Binding CHex}" Style="{StaticResource HardwareValue}" Margin="0,0,0,2"/>
-
-					<TextBlock FontSize="9" Foreground="#858585" FontFamily="Consolas" Text="MAR:"/>
-					<TextBlock Text="{Binding MARHex}" Style="{StaticResource HardwareValue}"/>
+					<TextBlock Text="{Binding AHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
+					<TextBlock Text="{Binding BHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
+					<TextBlock Text="{Binding CHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
 				</StackPanel>
 			</Border>
 		</DataTemplate>
 
-		<!-- Template pentru registru -->
 		<DataTemplate x:Key="RegisterItemTemplate">
-			<Border Background="#161616" BorderBrush="#252526" BorderThickness="1" Margin="2" Padding="4" CornerRadius="2">
+			<Border Background="#161616" BorderBrush="#252526" BorderThickness="1" Margin="1" Padding="3" CornerRadius="2">
 				<Grid>
 					<Grid.ColumnDefinitions>
-						<ColumnDefinition Width="32"/>
+						<ColumnDefinition Width="28"/>
 						<ColumnDefinition Width="*"/>
-						<ColumnDefinition Width="14"/>
+						<ColumnDefinition Width="10"/>
 					</Grid.ColumnDefinitions>
-					<TextBlock Grid.Column="0" Text="{Binding Label}" FontFamily="Consolas" Foreground="#569CD6" FontWeight="Bold" FontSize="11"/>
-					<TextBlock Grid.Column="1" Text="{Binding DisplayValue}" FontFamily="Consolas" Foreground="#4EC9B0" FontSize="11"/>
-					<Ellipse Grid.Column="2" Width="8" Height="8" VerticalAlignment="Center" HorizontalAlignment="Right">
+					<TextBlock Grid.Column="0" Text="{Binding Label}" FontFamily="Consolas" Foreground="#569CD6" FontWeight="Bold" FontSize="10"/>
+					<TextBlock Grid.Column="1" Text="{Binding DisplayValue}" FontFamily="Consolas" Foreground="#4EC9B0" FontSize="10"/>
+					<Ellipse Grid.Column="2" Width="7" Height="7" VerticalAlignment="Center" HorizontalAlignment="Right">
 						<Ellipse.Style>
 							<Style TargetType="Ellipse">
 								<Setter Property="Fill" Value="#52B788"/>
@@ -128,145 +110,550 @@
 			</Border>
 		</DataTemplate>
 
+		<Style x:Key="AlgoGrid" TargetType="DataGrid">
+			<Setter Property="Background" Value="#0A0A0A"/>
+			<Setter Property="RowBackground" Value="#141414"/>
+			<Setter Property="AlternatingRowBackground" Value="#1A1A1A"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Foreground" Value="#D4D4D4"/>
+			<Setter Property="GridLinesVisibility" Value="None"/>
+			<Setter Property="IsReadOnly" Value="True"/>
+			<Setter Property="HeadersVisibility" Value="Column"/>
+			<Setter Property="FontSize" Value="11"/>
+			<Setter Property="FontFamily" Value="Consolas"/>
+			<Setter Property="AutoGenerateColumns" Value="False"/>
+		</Style>
+
+		<Style x:Key="TabHeader" TargetType="TextBlock">
+			<Setter Property="FontSize" Value="12"/>
+			<Setter Property="FontWeight" Value="Bold"/>
+			<Setter Property="FontFamily" Value="Segoe UI"/>
+		</Style>
 	</Window.Resources>
 
-	<Grid Margin="12">
-		<Grid.RowDefinitions>
-			<RowDefinition Height="150"/>
-			<RowDefinition Height="*"/>
-			<RowDefinition Height="240"/>
-		</Grid.RowDefinitions>
+	<TabControl Background="#0A0A0A" BorderBrush="#252526" Margin="4">
+		<TabControl.Resources>
+			<Style TargetType="TabItem">
+				<Setter Property="Background" Value="#161616"/>
+				<Setter Property="Foreground" Value="#858585"/>
+				<Setter Property="BorderBrush" Value="#252526"/>
+				<Setter Property="Padding" Value="12,6"/>
+				<Setter Property="FontSize" Value="12"/>
+				<Style.Triggers>
+					<Trigger Property="IsSelected" Value="True">
+						<Setter Property="Background" Value="#1E1E1E"/>
+						<Setter Property="Foreground" Value="#D4D4D4"/>
+					</Trigger>
+				</Style.Triggers>
+			</Style>
+		</TabControl.Resources>
 
-		<!-- ===== RÂNDUL 0: Editor + Controale ===== -->
-		<Grid Grid.Row="0" Margin="0,0,0,10">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="320"/>
-			</Grid.ColumnDefinitions>
+		<!-- =============================== TAB 1: PIPELINE =============================== -->
+		<TabItem Header="1.0 — Pipeline Superscalar" DataContext="{Binding Pipeline}">
+			<Grid Margin="8">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="140"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="230"/>
+				</Grid.RowDefinitions>
 
-			<Border Grid.Column="0" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="8">
-				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="Auto"/>
-						<RowDefinition Height="*"/>
-					</Grid.RowDefinitions>
-					<TextBlock Grid.Row="0" Text="📝 Memorare Instrucțiuni (Cod Sursă RISC ALU / LD / ST / JMP)" Foreground="#569CD6" FontWeight="SemiBold" Margin="0,0,0,4" FontSize="12"/>
-					<TextBox Grid.Row="1" Text="{Binding ProgramSource, UpdateSourceTrigger=PropertyChanged}"
-                             AcceptsReturn="True" FontFamily="Consolas" FontSize="12" Background="#0A0A0A" Foreground="#D4D4D4"
-                             BorderBrush="#2D2D2D" VerticalScrollBarVisibility="Auto" Padding="6"/>
-				</Grid>
-			</Border>
-
-			<Border Grid.Column="1" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="10" Margin="10,0,0,0">
-				<StackPanel VerticalAlignment="Center">
-					<Grid Margin="0,0,0,6">
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="Auto"/>
-							<ColumnDefinition Width="*"/>
-						</Grid.ColumnDefinitions>
-						<TextBlock Grid.Column="0" Text="Adresă Start PC (Hex):" VerticalAlignment="Center" FontSize="11" Foreground="#858585"/>
-						<TextBox Grid.Column="1" Text="{Binding StartAddress, UpdateSourceTrigger=PropertyChanged}"
-                                 Background="#0A0A0A" Foreground="#4EC9B0" FontFamily="Consolas" FontWeight="Bold"
-                                 TextAlignment="Center" BorderBrush="#2D2D2D" Margin="8,0,0,0" Height="24" VerticalContentAlignment="Center"/>
-					</Grid>
-
-					<UniformGrid Columns="3" Height="32">
-						<Button Content="📥 LOAD" Command="{Binding LoadProgramCommand}" Style="{StaticResource ClockButton}" Margin="0,0,4,0"/>
-						<Button Content="⏱️ NEXT" Command="{Binding NextClockCommand}" Style="{StaticResource ClockButton}" Margin="0,0,4,0" Background="#122B3D" Foreground="#569CD6" BorderBrush="#244B66"/>
-						<Button Content="⟳ RESET" Command="{Binding ResetCommand}" Style="{StaticResource ClockButton}" Background="#3A1E1E" Foreground="#E06C75" BorderBrush="#6D1A1A"/>
-					</UniformGrid>
-
-					<Border Background="#161616" Margin="0,6,0,0" Padding="6" CornerRadius="2">
+				<!-- Editor + Controale -->
+				<Grid Grid.Row="0" Margin="0,0,0,8">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="300"/>
+					</Grid.ColumnDefinitions>
+					<Border Grid.Column="0" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6">
 						<Grid>
-							<TextBlock TextAlignment="Left" FontSize="11">
-								<Run Text="Ciclu Ceas: " Foreground="#858585"/>
-								<Run Text="{Binding CycleCount}" Foreground="#DCDCAA" FontWeight="Bold" FontSize="13"/>
-							</TextBlock>
-							<TextBlock Text="{Binding StatusMessage}" HorizontalAlignment="Right" Foreground="#E06C75" FontSize="10" VerticalAlignment="Center" MaxWidth="150" TextTrimming="CharacterEllipsis"/>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Cod Sursă RISC (ADD/SUB/AND/OR/XOR/MUL/LD/ST/JMP/JAL/BEQ...)" Foreground="#569CD6" FontSize="11" Margin="0,0,0,3"/>
+							<TextBox Grid.Row="1" Text="{Binding ProgramSource, UpdateSourceTrigger=PropertyChanged}"
+                                     AcceptsReturn="True" FontFamily="Consolas" FontSize="11" Background="#0A0A0A" Foreground="#D4D4D4"
+                                     BorderBrush="#2D2D2D" VerticalScrollBarVisibility="Auto" Padding="4"/>
 						</Grid>
 					</Border>
-				</StackPanel>
-			</Border>
-		</Grid>
+					<Border Grid.Column="1" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="8" Margin="8,0,0,0">
+						<StackPanel VerticalAlignment="Center">
+							<Grid Margin="0,0,0,5">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+								<TextBlock Grid.Column="0" Text="Start PC:" VerticalAlignment="Center" FontSize="11" Foreground="#858585"/>
+								<TextBox Grid.Column="1" Text="{Binding StartAddress, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#0A0A0A" Foreground="#4EC9B0" FontFamily="Consolas"
+                                         BorderBrush="#2D2D2D" Margin="6,0,0,0" Height="22" VerticalContentAlignment="Center" TextAlignment="Center"/>
+							</Grid>
+							<UniformGrid Columns="3" Height="28" Margin="0,0,0,5">
+								<Button Content="LOAD" Command="{Binding LoadProgramCommand}" Style="{StaticResource ClockButton}" Margin="0,0,3,0"/>
+								<Button Content="NEXT" Command="{Binding NextClockCommand}" Style="{StaticResource ClockButton}" Margin="0,0,3,0" Background="#122B3D" Foreground="#569CD6" BorderBrush="#244B66"/>
+								<Button Content="RESET" Command="{Binding ResetCommand}" Style="{StaticResource ClockButton}" Background="#3A1E1E" Foreground="#E06C75" BorderBrush="#6D1A1A"/>
+							</UniformGrid>
+							<Border Background="#161616" Padding="5" CornerRadius="2">
+								<Grid>
+									<TextBlock FontSize="11">
+										<Run Text="Tact: " Foreground="#858585"/>
+										<Run Text="{Binding CycleCount}" Foreground="#DCDCAA" FontWeight="Bold" FontSize="13"/>
+									</TextBlock>
+									<TextBlock Text="{Binding StatusMessage}" HorizontalAlignment="Right" Foreground="#E06C75" FontSize="9" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+								</Grid>
+							</Border>
+						</StackPanel>
+					</Border>
+				</Grid>
 
-		<!-- ===== RÂNDUL 1: Pipeline (5 stagii afișate individual) ===== -->
-		<Border Grid.Row="1" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,10">
-			<Grid>
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="*"/>
-					<ColumnDefinition Width="*"/>
-					<ColumnDefinition Width="*"/>
-					<ColumnDefinition Width="*"/>
-					<ColumnDefinition Width="*"/>
-				</Grid.ColumnDefinitions>
-
-				<ContentControl Grid.Column="0" Content="{Binding PipelineSlots[0]}" ContentTemplate="{StaticResource StageTemplate}" Margin="0,0,2,0"/>
-				<ContentControl Grid.Column="1" Content="{Binding PipelineSlots[1]}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0"/>
-				<ContentControl Grid.Column="2" Content="{Binding PipelineSlots[2]}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0"/>
-				<ContentControl Grid.Column="3" Content="{Binding PipelineSlots[3]}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0"/>
-				<ContentControl Grid.Column="4" Content="{Binding PipelineSlots[4]}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0,0,0"/>
-			</Grid>
-		</Border>
-
-		<!-- ===== RÂNDUL 2: Registre + Memorie ===== -->
-		<Grid Grid.Row="2">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="3*"/>
-				<ColumnDefinition Width="2*"/>
-			</Grid.ColumnDefinitions>
-
-			<Border Grid.Column="0" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,10,0">
-				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="Auto"/>
-						<RowDefinition Height="*"/>
-					</Grid.RowDefinitions>
-					<StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
-						<TextBlock Text="📋 Banc de Registre (R0 - R31)" Foreground="#569CD6" FontWeight="SemiBold" FontSize="12"/>
-						<TextBlock Text="  [● Valid / ● Invalid]" Foreground="#858585" FontSize="10" VerticalAlignment="Center"/>
-					</StackPanel>
-
-					<ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-						<ItemsControl ItemsSource="{Binding Registers}" ItemTemplate="{StaticResource RegisterItemTemplate}">
+				<!-- Pipeline Superscalar -->
+				<Border Grid.Row="1" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,0,8">
+					<Grid>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="*"/>
+						</Grid.RowDefinitions>
+						<Grid Grid.Row="0">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="3*"/>
+							</Grid.ColumnDefinitions>
+							<ContentControl Grid.Column="0" Content="{Binding PipelineSlots[0]}" ContentTemplate="{StaticResource StageTemplate}"/>
+							<ContentControl Grid.Column="1" Content="{Binding PipelineSlots[1]}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0,0,0"/>
+							<TextBlock Grid.Column="2" Padding="10,0,0,0" VerticalAlignment="Center" FontSize="10" Foreground="#555"
+                                       Text="Ext 1.0 | 4 unități funcționale (ALU, MUL×3, LD/ST, JMP) | forwarding EX/MEM"/>
+						</Grid>
+						<Separator Grid.Row="1" Background="#333" Margin="0,6,0,3"/>
+						<ItemsControl Grid.Row="2" ItemsSource="{Binding Units}">
 							<ItemsControl.ItemsPanel>
 								<ItemsPanelTemplate>
 									<UniformGrid Columns="4"/>
 								</ItemsPanelTemplate>
 							</ItemsControl.ItemsPanel>
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Border Background="#161616" BorderBrush="#2D2D2D" BorderThickness="1" CornerRadius="3" Margin="2" Padding="3">
+										<StackPanel>
+											<TextBlock Text="{Binding UnitName}" FontWeight="Bold" Foreground="#C586C0" FontFamily="Segoe UI" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,3"/>
+											<Grid>
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="*"/>
+													<ColumnDefinition Width="*"/>
+													<ColumnDefinition Width="*"/>
+												</Grid.ColumnDefinitions>
+												<ContentControl Grid.Column="0" Content="{Binding EX}" ContentTemplate="{StaticResource StageTemplate}"/>
+												<ContentControl Grid.Column="1" Content="{Binding MEM}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0,0,0"/>
+												<ContentControl Grid.Column="2" Content="{Binding WB}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0,0,0"/>
+											</Grid>
+										</StackPanel>
+									</Border>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
 						</ItemsControl>
-					</ScrollViewer>
-				</Grid>
-			</Border>
+					</Grid>
+				</Border>
 
-			<Border Grid.Column="1" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="8">
-				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="Auto"/>
-						<RowDefinition Height="*"/>
-					</Grid.RowDefinitions>
-					<TextBlock Grid.Row="0" Text="💾 Memorie Date RAM" Foreground="#569CD6" FontWeight="SemiBold" Margin="0,0,0,4" FontSize="12"/>
-
-					<DataGrid Grid.Row="1" ItemsSource="{Binding MemoryRows}" AutoGenerateColumns="False"
-                              Background="#0A0A0A" RowBackground="#161616" AlternatingRowBackground="#1A1A1A"
-                              BorderThickness="0" Foreground="#D4D4D4" GridLinesVisibility="None" IsReadOnly="True" HeadersVisibility="Column"
-                              FontSize="11" FontFamily="Consolas">
-						<DataGrid.Resources>
-							<Style TargetType="DataGridColumnHeader">
-								<Setter Property="Background" Value="#252526"/>
-								<Setter Property="Foreground" Value="#AAA"/>
-								<Setter Property="FontFamily" Value="Segoe UI"/>
-								<Setter Property="FontSize" Value="11"/>
-								<Setter Property="Padding" Value="4"/>
-							</Style>
-						</DataGrid.Resources>
-						<DataGrid.Columns>
-							<DataGridTextColumn Header="Adresă" Binding="{Binding AddressHex}" Width="1.5*" ElementStyle="{StaticResource HardwareValue}"/>
-							<DataGridTextColumn Header="Valoare" Binding="{Binding ValueHex}" Width="2*" ElementStyle="{StaticResource HardwareValue}"/>
-							<DataGridTextColumn Header="" Binding="{Binding PCIndicator}" Width="*" Foreground="#DCDCAA"/>
-						</DataGrid.Columns>
-					</DataGrid>
+				<!-- Registre + Memorie -->
+				<Grid Grid.Row="2">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="3*"/>
+						<ColumnDefinition Width="2*"/>
+					</Grid.ColumnDefinitions>
+					<Border Grid.Column="0" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,8,0">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Banc Registre R0-R31 [● Valid / ● Busy]" Foreground="#569CD6" FontSize="11" Margin="0,0,0,3"/>
+							<ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+								<ItemsControl ItemsSource="{Binding Registers}" ItemTemplate="{StaticResource RegisterItemTemplate}">
+									<ItemsControl.ItemsPanel>
+										<ItemsPanelTemplate>
+											<UniformGrid Columns="4"/>
+										</ItemsPanelTemplate>
+									</ItemsControl.ItemsPanel>
+								</ItemsControl>
+							</ScrollViewer>
+						</Grid>
+					</Border>
+					<Border Grid.Column="1" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Memorie RAM" Foreground="#569CD6" FontSize="11" Margin="0,0,0,3"/>
+							<DataGrid Grid.Row="1" ItemsSource="{Binding MemoryRows}" Style="{StaticResource AlgoGrid}">
+								<DataGrid.Columns>
+									<DataGridTextColumn Header="Adresă" Binding="{Binding AddressHex}" Width="1.5*" ElementStyle="{StaticResource HardwareValue}"/>
+									<DataGridTextColumn Header="Valoare" Binding="{Binding ValueHex}" Width="2*" ElementStyle="{StaticResource HardwareValue}"/>
+									<DataGridTextColumn Header="" Binding="{Binding PCIndicator}" Width="*"/>
+								</DataGrid.Columns>
+							</DataGrid>
+						</Grid>
+					</Border>
 				</Grid>
-			</Border>
-		</Grid>
-	</Grid>
+			</Grid>
+		</TabItem>
+
+		<!-- =============================== TAB 2: SCOREBOARD =============================== -->
+		<TabItem Header="1.1 — Scoreboard" DataContext="{Binding Scoreboard}">
+			<Grid Margin="8">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+				</Grid.RowDefinitions>
+
+				<!-- Mini editor + controls -->
+				<Border Grid.Row="0" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="220"/>
+							<ColumnDefinition Width="Auto"/>
+						</Grid.ColumnDefinitions>
+						<TextBox Grid.Column="0" Text="{Binding ProgramSource, UpdateSourceTrigger=PropertyChanged}"
+                                 AcceptsReturn="True" FontFamily="Consolas" FontSize="11" Background="#0A0A0A" Foreground="#D4D4D4"
+                                 BorderBrush="#2D2D2D" Height="80" VerticalScrollBarVisibility="Auto" Padding="4" Margin="0,0,8,0"/>
+						<StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+							<Grid Margin="0,0,0,4">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+								<TextBlock Grid.Column="0" Text="Start PC:" VerticalAlignment="Center" FontSize="11" Foreground="#858585"/>
+								<TextBox Grid.Column="1" Text="{Binding StartAddress, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#0A0A0A" Foreground="#4EC9B0" FontFamily="Consolas" Height="22"
+                                         BorderBrush="#2D2D2D" Margin="6,0,0,0" VerticalContentAlignment="Center" TextAlignment="Center"/>
+							</Grid>
+							<TextBlock Text="{Binding Status}" Foreground="#E06C75" FontSize="10" TextTrimming="CharacterEllipsis"/>
+							<TextBlock FontSize="11" Margin="0,4,0,0">
+								<Run Text="Tact: " Foreground="#858585"/>
+								<Run Text="{Binding CycleCount}" Foreground="#DCDCAA" FontWeight="Bold"/>
+							</TextBlock>
+						</StackPanel>
+						<StackPanel Grid.Column="2" VerticalAlignment="Center">
+							<Button Content="LOAD" Command="{Binding LoadCommand}" Style="{StaticResource ClockButton}" Margin="0,0,0,4"/>
+							<Button Content="TICK" Command="{Binding TickCommand}" Style="{StaticResource ClockButton}" Background="#122B3D" Foreground="#569CD6" BorderBrush="#244B66" Margin="0,0,0,4"/>
+							<Button Content="RESET" Command="{Binding ResetCommand}" Style="{StaticResource ClockButton}" Background="#3A1E1E" Foreground="#E06C75" BorderBrush="#6D1A1A"/>
+						</StackPanel>
+					</Grid>
+				</Border>
+
+				<!-- 3 Tabele Scoreboard -->
+				<Grid Grid.Row="1">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="2.5*"/>
+						<ColumnDefinition Width="3*"/>
+						<ColumnDefinition Width="1.2*"/>
+					</Grid.ColumnDefinitions>
+
+					<Border Grid.Column="0" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,6,0">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Stare Unități Funcționale" Foreground="#C586C0" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+							<DataGrid Grid.Row="1" ItemsSource="{Binding FuTable}" Style="{StaticResource AlgoGrid}">
+								<DataGrid.Columns>
+									<DataGridTextColumn Header="FU" Binding="{Binding FuName}" Width="50"/>
+									<DataGridTextColumn Header="Busy" Binding="{Binding Busy}" Width="40"/>
+									<DataGridTextColumn Header="Op" Binding="{Binding Op}" Width="50"/>
+									<DataGridTextColumn Header="Fi" Binding="{Binding Fi}" Width="35"/>
+									<DataGridTextColumn Header="Fj" Binding="{Binding Fj}" Width="35"/>
+									<DataGridTextColumn Header="Fk" Binding="{Binding Fk}" Width="35"/>
+									<DataGridTextColumn Header="Qj" Binding="{Binding Qj}" Width="50"/>
+									<DataGridTextColumn Header="Qk" Binding="{Binding Qk}" Width="50"/>
+									<DataGridTextColumn Header="Rj" Binding="{Binding Rj}" Width="35"/>
+									<DataGridTextColumn Header="Rk" Binding="{Binding Rk}" Width="35"/>
+								</DataGrid.Columns>
+							</DataGrid>
+						</Grid>
+					</Border>
+
+					<Border Grid.Column="1" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,6,0">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Stare Instrucțiuni (Ciclu Ceas per Stadiu)" Foreground="#C586C0" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+							<DataGrid Grid.Row="1" ItemsSource="{Binding InstrTable}" Style="{StaticResource AlgoGrid}">
+								<DataGrid.Columns>
+									<DataGridTextColumn Header="Instrucțiune" Binding="{Binding Instr}" Width="*"/>
+									<DataGridTextColumn Header="FU" Binding="{Binding Fu}" Width="60"/>
+									<DataGridTextColumn Header="Issue" Binding="{Binding Issue}" Width="45"/>
+									<DataGridTextColumn Header="Read Op" Binding="{Binding Read}" Width="55"/>
+									<DataGridTextColumn Header="Exec Done" Binding="{Binding ExecDone}" Width="65"/>
+									<DataGridTextColumn Header="Write" Binding="{Binding Write}" Width="45"/>
+								</DataGrid.Columns>
+							</DataGrid>
+						</Grid>
+					</Border>
+
+					<Border Grid.Column="2" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Reg → FU" Foreground="#C586C0" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+							<DataGrid Grid.Row="1" ItemsSource="{Binding RegResultTable}" Style="{StaticResource AlgoGrid}">
+								<DataGrid.Columns>
+									<DataGridTextColumn Header="Reg" Binding="{Binding Reg}" Width="40"/>
+									<DataGridTextColumn Header="FU" Binding="{Binding Fu}" Width="*"/>
+								</DataGrid.Columns>
+							</DataGrid>
+						</Grid>
+					</Border>
+				</Grid>
+			</Grid>
+		</TabItem>
+
+		<!-- =============================== TAB 3: TOMASULO =============================== -->
+		<TabItem Header="1.2 — Tomasulo" DataContext="{Binding Tomasulo}">
+			<Grid Margin="8">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+				</Grid.RowDefinitions>
+
+				<Border Grid.Row="0" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="220"/>
+							<ColumnDefinition Width="Auto"/>
+						</Grid.ColumnDefinitions>
+						<TextBox Grid.Column="0" Text="{Binding ProgramSource, UpdateSourceTrigger=PropertyChanged}"
+                                 AcceptsReturn="True" FontFamily="Consolas" FontSize="11" Background="#0A0A0A" Foreground="#D4D4D4"
+                                 BorderBrush="#2D2D2D" Height="80" VerticalScrollBarVisibility="Auto" Padding="4" Margin="0,0,8,0"/>
+						<StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+							<Grid Margin="0,0,0,4">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+								<TextBlock Grid.Column="0" Text="Start PC:" VerticalAlignment="Center" FontSize="11" Foreground="#858585"/>
+								<TextBox Grid.Column="1" Text="{Binding StartAddress, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#0A0A0A" Foreground="#4EC9B0" FontFamily="Consolas" Height="22"
+                                         BorderBrush="#2D2D2D" Margin="6,0,0,0" VerticalContentAlignment="Center" TextAlignment="Center"/>
+							</Grid>
+							<TextBlock Text="{Binding Status}" Foreground="#E06C75" FontSize="10" TextTrimming="CharacterEllipsis"/>
+							<TextBlock Text="{Binding CdbInfo}" Foreground="#F0C030" FontSize="11" FontFamily="Consolas" Margin="0,4,0,0"/>
+							<TextBlock FontSize="11" Margin="0,2,0,0">
+								<Run Text="Tact: " Foreground="#858585"/>
+								<Run Text="{Binding CycleCount}" Foreground="#DCDCAA" FontWeight="Bold"/>
+							</TextBlock>
+						</StackPanel>
+						<StackPanel Grid.Column="2" VerticalAlignment="Center">
+							<Button Content="LOAD" Command="{Binding LoadCommand}" Style="{StaticResource ClockButton}" Margin="0,0,0,4"/>
+							<Button Content="TICK" Command="{Binding TickCommand}" Style="{StaticResource ClockButton}" Background="#122B3D" Foreground="#569CD6" BorderBrush="#244B66" Margin="0,0,0,4"/>
+							<Button Content="RESET" Command="{Binding ResetCommand}" Style="{StaticResource ClockButton}" Background="#3A1E1E" Foreground="#E06C75" BorderBrush="#6D1A1A"/>
+						</StackPanel>
+					</Grid>
+				</Border>
+
+				<Grid Grid.Row="1">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="3*"/>
+						<ColumnDefinition Width="1.5*"/>
+					</Grid.ColumnDefinitions>
+
+					<Border Grid.Column="0" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,6,0">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Stații de Rezervare (ALU×4, MUL×2, LDST×2, JMP×2)" Foreground="#C586C0" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+							<DataGrid Grid.Row="1" ItemsSource="{Binding RSTable}" Style="{StaticResource AlgoGrid}">
+								<DataGrid.Columns>
+									<DataGridTextColumn Header="Tag" Binding="{Binding Tag}" Width="70"/>
+									<DataGridTextColumn Header="Busy" Binding="{Binding Busy}" Width="40"/>
+									<DataGridTextColumn Header="Op" Binding="{Binding Op}" Width="60"/>
+									<DataGridTextColumn Header="Vj" Binding="{Binding Vj}" Width="60"/>
+									<DataGridTextColumn Header="Vk" Binding="{Binding Vk}" Width="60"/>
+									<DataGridTextColumn Header="Qj" Binding="{Binding Qj}" Width="70"/>
+									<DataGridTextColumn Header="Qk" Binding="{Binding Qk}" Width="70"/>
+									<DataGridTextColumn Header="Stare" Binding="{Binding State}" Width="*"/>
+								</DataGrid.Columns>
+							</DataGrid>
+						</Grid>
+					</Border>
+
+					<Border Grid.Column="1" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Registre (Valoare + Tag Qi)" Foreground="#C586C0" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+							<DataGrid Grid.Row="1" ItemsSource="{Binding RegTable}" Style="{StaticResource AlgoGrid}">
+								<DataGrid.Columns>
+									<DataGridTextColumn Header="Reg" Binding="{Binding Reg}" Width="40"/>
+									<DataGridTextColumn Header="Valoare" Binding="{Binding Value}" Width="*"/>
+									<DataGridTextColumn Header="Qi" Binding="{Binding Qi}" Width="70"/>
+								</DataGrid.Columns>
+							</DataGrid>
+						</Grid>
+					</Border>
+				</Grid>
+			</Grid>
+		</TabItem>
+
+		<!-- =============================== TAB 4: OoO =============================== -->
+		<TabItem Header="1.3 — Prefetch + OoO + ROB" DataContext="{Binding Ooo}">
+			<Grid Margin="8">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+				</Grid.RowDefinitions>
+
+				<Border Grid.Row="0" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="280"/>
+							<ColumnDefinition Width="Auto"/>
+						</Grid.ColumnDefinitions>
+						<TextBox Grid.Column="0" Text="{Binding ProgramSource, UpdateSourceTrigger=PropertyChanged}"
+                                 AcceptsReturn="True" FontFamily="Consolas" FontSize="11" Background="#0A0A0A" Foreground="#D4D4D4"
+                                 BorderBrush="#2D2D2D" Height="80" VerticalScrollBarVisibility="Auto" Padding="4" Margin="0,0,8,0"/>
+						<StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+							<Grid Margin="0,0,0,4">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
+								<TextBlock Grid.Column="0" Text="Start PC:" VerticalAlignment="Center" FontSize="11" Foreground="#858585"/>
+								<TextBox Grid.Column="1" Text="{Binding StartAddress, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#0A0A0A" Foreground="#4EC9B0" FontFamily="Consolas" Height="22"
+                                         BorderBrush="#2D2D2D" Margin="6,0,0,0" VerticalContentAlignment="Center" TextAlignment="Center"/>
+							</Grid>
+							<TextBlock Text="{Binding Status}" Foreground="#E06C75" FontSize="10" TextTrimming="CharacterEllipsis"/>
+							<TextBlock Text="{Binding FuStatus}" Foreground="#4EC9B0" FontSize="10" FontFamily="Consolas" TextTrimming="CharacterEllipsis" Margin="0,3,0,0"/>
+							<TextBlock FontSize="11" Margin="0,3,0,0">
+								<Run Text="Tact: " Foreground="#858585"/>
+								<Run Text="{Binding CycleCount}" Foreground="#DCDCAA" FontWeight="Bold"/>
+							</TextBlock>
+						</StackPanel>
+						<StackPanel Grid.Column="2" VerticalAlignment="Center">
+							<Button Content="LOAD" Command="{Binding LoadCommand}" Style="{StaticResource ClockButton}" Margin="0,0,0,4"/>
+							<Button Content="TICK" Command="{Binding TickCommand}" Style="{StaticResource ClockButton}" Background="#122B3D" Foreground="#569CD6" BorderBrush="#244B66" Margin="0,0,0,4"/>
+							<Button Content="RESET" Command="{Binding ResetCommand}" Style="{StaticResource ClockButton}" Background="#3A1E1E" Foreground="#E06C75" BorderBrush="#6D1A1A"/>
+						</StackPanel>
+					</Grid>
+				</Border>
+
+				<Grid Grid.Row="1">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="1.2*"/>
+						<ColumnDefinition Width="2*"/>
+						<ColumnDefinition Width="2*"/>
+						<ColumnDefinition Width="1.5*"/>
+					</Grid.ColumnDefinitions>
+
+					<!-- Prefetch Buffers -->
+					<Grid Grid.Column="0">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="*"/>
+							<RowDefinition Height="*"/>
+						</Grid.RowDefinitions>
+						<Border Grid.Row="0" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,6,4">
+							<Grid>
+								<Grid.RowDefinitions>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="*"/>
+								</Grid.RowDefinitions>
+								<TextBlock Grid.Row="0" Text="Buffer Secvențial" Foreground="#569CD6" FontSize="11" FontWeight="Bold" Margin="0,0,0,3"/>
+								<DataGrid Grid.Row="1" ItemsSource="{Binding PrimaryBufferRows}" Style="{StaticResource AlgoGrid}">
+									<DataGrid.Columns>
+										<DataGridTextColumn Header="Instrucțiune" Binding="{Binding InstrLabel}" Width="*"/>
+									</DataGrid.Columns>
+								</DataGrid>
+							</Grid>
+						</Border>
+						<Border Grid.Row="1" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,6,0">
+							<Grid>
+								<Grid.RowDefinitions>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="*"/>
+								</Grid.RowDefinitions>
+								<TextBlock Grid.Row="0" Text="Buffer Branch Target" Foreground="#F0C030" FontSize="11" FontWeight="Bold" Margin="0,0,0,3"/>
+								<DataGrid Grid.Row="1" ItemsSource="{Binding BranchBufferRows}" Style="{StaticResource AlgoGrid}">
+									<DataGrid.Columns>
+										<DataGridTextColumn Header="Instrucțiune" Binding="{Binding InstrLabel}" Width="*"/>
+									</DataGrid.Columns>
+								</DataGrid>
+							</Grid>
+						</Border>
+					</Grid>
+
+					<!-- Instruction Window -->
+					<Border Grid.Column="1" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,6,0">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Fereastră Instrucțiuni (OoO Issue)" Foreground="#C586C0" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+							<DataGrid Grid.Row="1" ItemsSource="{Binding WindowRows}" Style="{StaticResource AlgoGrid}">
+								<DataGrid.Columns>
+									<DataGridTextColumn Header="Tag" Binding="{Binding Tag}" Width="60"/>
+									<DataGridTextColumn Header="Instrucțiune" Binding="{Binding Instr}" Width="*"/>
+									<DataGridTextColumn Header="Vj" Binding="{Binding Vj}" Width="50"/>
+									<DataGridTextColumn Header="Vk" Binding="{Binding Vk}" Width="50"/>
+									<DataGridTextColumn Header="Qj" Binding="{Binding Qj}" Width="60"/>
+									<DataGridTextColumn Header="Qk" Binding="{Binding Qk}" Width="60"/>
+									<DataGridTextColumn Header="Stare" Binding="{Binding State}" Width="70"/>
+								</DataGrid.Columns>
+							</DataGrid>
+						</Grid>
+					</Border>
+
+					<!-- Reorder Buffer -->
+					<Border Grid.Column="2" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,6,0">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Reorder Buffer (Commit în Ordine)" Foreground="#C586C0" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+							<DataGrid Grid.Row="1" ItemsSource="{Binding RobRows}" Style="{StaticResource AlgoGrid}">
+								<DataGrid.Columns>
+									<DataGridTextColumn Header="Tag" Binding="{Binding Tag}" Width="60"/>
+									<DataGridTextColumn Header="Instrucțiune" Binding="{Binding Instr}" Width="*"/>
+									<DataGridTextColumn Header="Dest" Binding="{Binding Dest}" Width="45"/>
+									<DataGridTextColumn Header="Valoare" Binding="{Binding Value}" Width="60"/>
+									<DataGridTextColumn Header="Ready" Binding="{Binding Ready}" Width="45"/>
+								</DataGrid.Columns>
+							</DataGrid>
+						</Grid>
+					</Border>
+
+					<!-- Registre -->
+					<Border Grid.Column="3" Background="#111" BorderBrush="#252526" BorderThickness="1" CornerRadius="4" Padding="6">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" Text="Registre + Rename Tags" Foreground="#C586C0" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+							<DataGrid Grid.Row="1" ItemsSource="{Binding RegTable}" Style="{StaticResource AlgoGrid}">
+								<DataGrid.Columns>
+									<DataGridTextColumn Header="Reg" Binding="{Binding Reg}" Width="40"/>
+									<DataGridTextColumn Header="Val" Binding="{Binding Value}" Width="*"/>
+									<DataGridTextColumn Header="Tag" Binding="{Binding Qi}" Width="60"/>
+								</DataGrid.Columns>
+							</DataGrid>
+						</Grid>
+					</Border>
+				</Grid>
+			</Grid>
+		</TabItem>
+	</TabControl>
 </Window>
