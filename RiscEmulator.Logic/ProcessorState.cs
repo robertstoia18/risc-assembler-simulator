@@ -41,11 +41,11 @@ public class ProcessorState
             Slots[i] = new PipelineSlot { Instruction = Instruction.MakeNop() };
     }
 
-    public PipelineSlot IF  => Slots[(int)PipelineStage.IF];
-    public PipelineSlot OF  => Slots[(int)PipelineStage.OF];
-    public PipelineSlot EX  => Slots[(int)PipelineStage.EX];
+    public PipelineSlot IF => Slots[(int)PipelineStage.IF];
+    public PipelineSlot OF => Slots[(int)PipelineStage.OF];
+    public PipelineSlot EX => Slots[(int)PipelineStage.EX];
     public PipelineSlot MEM => Slots[(int)PipelineStage.MEM];
-    public PipelineSlot WB  => Slots[(int)PipelineStage.WB];
+    public PipelineSlot WB => Slots[(int)PipelineStage.WB];
 
     public void Reset()
     {

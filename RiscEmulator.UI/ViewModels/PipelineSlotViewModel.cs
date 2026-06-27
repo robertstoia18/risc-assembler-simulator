@@ -6,6 +6,10 @@ public class PipelineSlotViewModel : BaseViewModel
     private string _instructionLabel = "NOP";
     private bool _isStall;
     private bool _hasForwarding;
+    private int _a;
+    private int _b;
+    private int _c;
+    private int _mar;
 
     public string StageName
     {
@@ -30,4 +34,33 @@ public class PipelineSlotViewModel : BaseViewModel
         get => _hasForwarding;
         set => Set(ref _hasForwarding, value);
     }
+
+    public int A
+    {
+        get => _a;
+        set { Set(ref _a, value); OnPropertyChanged(nameof(AHex)); }
+    }
+
+    public int B
+    {
+        get => _b;
+        set { Set(ref _b, value); OnPropertyChanged(nameof(BHex)); }
+    }
+
+    public int C
+    {
+        get => _c;
+        set { Set(ref _c, value); OnPropertyChanged(nameof(CHex)); }
+    }
+
+    public int MAR
+    {
+        get => _mar;
+        set { Set(ref _mar, value); OnPropertyChanged(nameof(MARHex)); }
+    }
+
+    public string AHex => $"0x{A:X4}";
+    public string BHex => $"0x{B:X4}";
+    public string CHex => $"0x{C:X4}";
+    public string MARHex => $"0x{MAR:X4}";
 }

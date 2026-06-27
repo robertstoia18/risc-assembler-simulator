@@ -1,4 +1,4 @@
-namespace RiscEmulator.Logic;
+﻿namespace RiscEmulator.Logic;
 
 public class PipelineController
 {
@@ -9,6 +9,8 @@ public class PipelineController
     public List<ForwardingEvent> LastForwardings { get; private set; } = new();
     public bool LastCycleHadStall { get; private set; }
 
+    public PipelineSlot[] DisplaySlots { get; } = new PipelineSlot[5];
+
     private List<(int Address, Instruction Instr)> _program = new();
     private Dictionary<int, Instruction> _instrByAddress = new();
     private List<(int Address, int Word)> _programWords = new();
@@ -16,6 +18,8 @@ public class PipelineController
     public PipelineController(ProcessorState state)
     {
         State = state;
+        for (int i = 0; i < 5; i++)
+            DisplaySlots[i] = new PipelineSlot { Instruction = Instruction.MakeNop() };
     }
 
     public void LoadProgram(AssemblerResult result)
@@ -27,8 +31,25 @@ public class PipelineController
         _programWords = result.Words;
         _instrByAddress = _program.ToDictionary(p => p.Address, p => p.Instr);
         State.Memory.LoadProgram(result.Words);
+
         if (_program.Count > 0)
+        {
             State.PC = _program[0].Address;
+
+            State.IF.Instruction = _program[0].Instr;
+            State.IF.A = 0;
+            State.IF.B = 0;
+            State.IF.C = 0;
+            State.IF.IsStall = false;
+            State.IF.BranchTaken = false;
+            State.IF.BranchTarget = 0;
+
+            State.IR = State.Memory.Read(State.PC);
+            State.MDR = State.IR;
+            State.MAR = State.PC;
+
+            SaveDisplayState();
+        }
     }
 
     public void Tick()
@@ -50,9 +71,30 @@ public class PipelineController
         if (!stall)
             StageIF();
 
+        SaveDisplayState();
+
         AdvancePipeline(stall);
 
         CycleCount++;
+    }
+
+    private void SaveDisplayState()
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            var src = State.Slots[i];
+            DisplaySlots[i] = new PipelineSlot
+            {
+                Instruction = src.Instruction,
+                A = src.A,
+                B = src.B,
+                C = src.C,
+                MAR = src.MAR,
+                IsStall = src.IsStall,
+                BranchTaken = src.BranchTaken,
+                BranchTarget = src.BranchTarget
+            };
+        }
     }
 
     private void StageWB()
@@ -84,14 +126,18 @@ public class PipelineController
         _fwdFromMem = null;
 
         var exInstr = State.EX.Instruction;
-        if (exInstr != null && !exInstr.IsNop && !exInstr.IsLoad &&
-            InstructionSet.WritesRd(exInstr.Op) && !exInstr.IsStore)
+        if (exInstr != null && !exInstr.IsNop && !exInstr.IsHalt && !exInstr.IsLoad &&
+            InstructionSet.WritesRd(exInstr.Op) && !exInstr.IsStore && exInstr.Rd != 0)
+        {
             _fwdFromEx = (exInstr.Rd, State.EX.C);
+        }
 
         var memInstr = State.MEM.Instruction;
-        if (memInstr != null && !memInstr.IsNop &&
-            InstructionSet.WritesRd(memInstr.Op) && !memInstr.IsStore)
+        if (memInstr != null && !memInstr.IsNop && !memInstr.IsHalt &&
+            InstructionSet.WritesRd(memInstr.Op) && !memInstr.IsStore && memInstr.Rd != 0)
+        {
             _fwdFromMem = (memInstr.Rd, State.MEM.C);
+        }
     }
 
     private (int Reg, int Val)? _fwdFromEx;
@@ -101,7 +147,7 @@ public class PipelineController
     {
         var slot = State.OF;
         var instr = slot.Instruction;
-        if (instr == null || instr.IsNop) return false;
+        if (instr == null || instr.IsNop || instr.IsHalt) return false;
 
         bool rs1Needed = InstructionSet.ReadsRs1(instr.Op);
         bool rs2Needed = InstructionSet.ReadsRs2(instr.Op) && instr.SourceMode != AddressingMode.AM;
@@ -333,9 +379,9 @@ public class PipelineController
             case Opcode.ADD: return a + operandB;
             case Opcode.SUB: return a - operandB;
             case Opcode.AND: return a & operandB;
-            case Opcode.OR:  return a | operandB;
+            case Opcode.OR: return a | operandB;
             case Opcode.XOR: return a ^ operandB;
-            default:         return 0;
+            default: return 0;
         }
     }
 
@@ -345,9 +391,9 @@ public class PipelineController
         {
             case Opcode.BEQ: return a == b;
             case Opcode.BNE: return a != b;
-            case Opcode.BL:  return a < b;
+            case Opcode.BL: return a < b;
             case Opcode.BGE: return a >= b;
-            default:         return false;
+            default: return false;
         }
     }
 }
