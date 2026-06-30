@@ -309,29 +309,18 @@ public class OooController
                 foreach (var bi in BranchBuffer)
                     PrimaryBuffer.Enqueue(bi);
                 BranchBuffer.Clear();
-                var robList = ReorderBuffer.ToList();
-                int branchRobIndex = robList.FindIndex(r => r.Tag == head.Tag);
+                _fetchPc = _branchFetchPc;
 
-                var toRemove = new List<IssueWindowEntry>();
-                foreach (var w in InstructionWindow)
-                {
-                    var robEntry = robList.FirstOrDefault(r => r.Tag == w.Tag);
-                    if (robEntry != null && robList.IndexOf(robEntry) > branchRobIndex)
-                    {
-                        toRemove.Add(w);
-                        foreach (var fu in _fuSlots.Values)
-                            if (fu.Tag == w.Tag) { fu.Busy = false; fu.Instr = null; fu.Done = false; }
-                    }
-                }
-                foreach (var w in toRemove)
-                    InstructionWindow.Remove(w);
+                foreach (var fu in _fuSlots.Values)
+                { fu.Busy = false; fu.Instr = null; fu.Done = false; }
 
-                while (ReorderBuffer.Count > 0 && ReorderBuffer.Peek().Tag != head.Tag)
-                {
-                    var oldEntry = ReorderBuffer.Dequeue();
-                    foreach (var fu in _fuSlots.Values)
-                        if (fu.Tag == oldEntry.Tag) { fu.Busy = false; fu.Instr = null; fu.Done = false; }
-                }
+                InstructionWindow.Clear();
+
+                while (ReorderBuffer.Count > 0)
+                    ReorderBuffer.Dequeue();
+
+                for (int i = 1; i < 32; i++)
+                    RegisterTags[i] = null;
             }
             else
             {
