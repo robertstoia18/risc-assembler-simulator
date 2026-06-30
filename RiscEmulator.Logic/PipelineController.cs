@@ -158,6 +158,7 @@ public class PipelineController
         else if (instr.Op == Opcode.POP)
         {
             slot.C = State.Memory.Read(slot.MAR);
+            State.C = slot.C;
             State.MDR = slot.C;
         }
         else if (instr.Op == Opcode.PUSH)
@@ -187,12 +188,14 @@ public class PipelineController
             slot.C = a * b;
             if (unit.ExCyclesLeft > 0) unit.ExCyclesLeft--;
             State.C = slot.C;
+            State.C = slot.C;
             return;
         }
 
         if (instr.IsLoad || instr.IsStore)
         {
             slot.MAR = a + instr.Immediate;
+            State.MAR = slot.MAR;
             State.MAR = slot.MAR;
             return;
         }
@@ -352,6 +355,9 @@ public class PipelineController
         slot.A = a;
         slot.B = b;
         slot.C = c;
+        State.A = a;   
+        State.B = b;   
+        State.C = c;
 
         if (InstructionSet.WritesRd(instr.Op) && !instr.IsStore && instr.Rd != 0)
             State.Registers.Invalidate(instr.Rd);

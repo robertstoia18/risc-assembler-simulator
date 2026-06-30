@@ -35,11 +35,40 @@ public class OooViewModel : BaseViewModel
     private readonly OooController _ctrl;
     private readonly Assembler _asm = new();
 
-    public ObservableCollection<PrefetchRowVm> PrimaryBufferRows { get; } = new();
-    public ObservableCollection<PrefetchRowVm> BranchBufferRows { get; } = new();
-    public ObservableCollection<WindowRowVm> WindowRows { get; } = new();
-    public ObservableCollection<RobRowVm> RobRows { get; } = new();
-    public ObservableCollection<RegTagRowVm> RegTable { get; } = new();
+    private ObservableCollection<PrefetchRowVm> _primaryBufferRows = new();
+    public ObservableCollection<PrefetchRowVm> PrimaryBufferRows
+    {
+        get => _primaryBufferRows;
+        set => Set(ref _primaryBufferRows, value);
+    }
+
+    private ObservableCollection<PrefetchRowVm> _branchBufferRows = new();
+    public ObservableCollection<PrefetchRowVm> BranchBufferRows
+    {
+        get => _branchBufferRows;
+        set => Set(ref _branchBufferRows, value);
+    }
+
+    private ObservableCollection<WindowRowVm> _windowRows = new();
+    public ObservableCollection<WindowRowVm> WindowRows
+    {
+        get => _windowRows;
+        set => Set(ref _windowRows, value);
+    }
+
+    private ObservableCollection<RobRowVm> _robRows = new();
+    public ObservableCollection<RobRowVm> RobRows
+    {
+        get => _robRows;
+        set => Set(ref _robRows, value);
+    }
+
+    private ObservableCollection<RegTagRowVm> _regTable = new();
+    public ObservableCollection<RegTagRowVm> RegTable
+    {
+        get => _regTable;
+        set => Set(ref _regTable, value);
+    }
 
     private string _fuStatus = "";
     public string FuStatus { get => _fuStatus; set => Set(ref _fuStatus, value); }
@@ -71,9 +100,15 @@ public class OooViewModel : BaseViewModel
 
     private void InitRegTable()
     {
-        RegTable.Clear();
+        var newReg = new ObservableCollection<RegTagRowVm>();
         for (int i = 1; i < 32; i++)
-            RegTable.Add(new RegTagRowVm { Reg = $"R{i}", Value = "0", Qi = "" });
+            newReg.Add(new RegTagRowVm { Reg = $"R{i}", Value = "0", Qi = "" });
+        RegTable = newReg;
+
+        PrimaryBufferRows = new ObservableCollection<PrefetchRowVm>();
+        BranchBufferRows = new ObservableCollection<PrefetchRowVm>();
+        WindowRows = new ObservableCollection<WindowRowVm>();
+        RobRows = new ObservableCollection<RobRowVm>();
     }
 
     private void OnLoad()
@@ -103,35 +138,27 @@ public class OooViewModel : BaseViewModel
         _ctrl.LoadProgram(new AssemblerResult());
         CycleCount = 0;
         Status = "Reset.";
-        PrimaryBufferRows.Clear();
-        BranchBufferRows.Clear();
-        WindowRows.Clear();
-        RobRows.Clear();
         InitRegTable();
         FuStatus = "";
     }
 
     private void Refresh()
     {
-        PrimaryBufferRows.Clear();
+        // Primary buffer
+        var newPrimary = new ObservableCollection<PrefetchRowVm>();
         foreach (var e in _ctrl.PrimaryBuffer)
-            PrimaryBufferRows.Add(new PrefetchRowVm
-            {
-                InstrLabel = e.Instr.ToString(),
-                Source = "Secvențial"
-            });
+            newPrimary.Add(new PrefetchRowVm { InstrLabel = e.Instr.ToString(), Source = "Secvențial" });
+        PrimaryBufferRows = newPrimary;
 
-        BranchBufferRows.Clear();
+        // Branch buffer
+        var newBranch = new ObservableCollection<PrefetchRowVm>();
         foreach (var e in _ctrl.BranchBuffer)
-            BranchBufferRows.Add(new PrefetchRowVm
-            {
-                InstrLabel = e.Instr.ToString(),
-                Source = "Branch Target"
-            });
+            newBranch.Add(new PrefetchRowVm { InstrLabel = e.Instr.ToString(), Source = "Branch Target" });
+        BranchBufferRows = newBranch;
 
-        WindowRows.Clear();
+        var newWindow = new ObservableCollection<WindowRowVm>();
         foreach (var w in _ctrl.InstructionWindow)
-            WindowRows.Add(new WindowRowVm
+            newWindow.Add(new WindowRowVm
             {
                 Tag = w.Tag,
                 Instr = w.Instr.ToString(),
@@ -141,10 +168,11 @@ public class OooViewModel : BaseViewModel
                 Qk = w.Qk ?? "",
                 State = w.Dispatched ? "Dispatched" : "Waiting"
             });
+        WindowRows = newWindow;
 
-        RobRows.Clear();
+        var newRob = new ObservableCollection<RobRowVm>();
         foreach (var r in _ctrl.ReorderBuffer)
-            RobRows.Add(new RobRowVm
+            newRob.Add(new RobRowVm
             {
                 Tag = r.Tag,
                 Instr = r.Instr.ToString(),
@@ -152,12 +180,19 @@ public class OooViewModel : BaseViewModel
                 Value = r.Value.HasValue ? r.Value.Value.ToString() : "—",
                 Ready = r.Ready ? "Yes" : "No"
             });
+        RobRows = newRob;
 
-        for (int i = 0; i < RegTable.Count; i++)
+        var newReg = new ObservableCollection<RegTagRowVm>();
+        for (int i = 1; i < 32; i++)
         {
-            RegTable[i].Value = _ctrl.Registers[i + 1].ToString();
-            RegTable[i].Qi = _ctrl.RegisterTags[i + 1] ?? "";
+            newReg.Add(new RegTagRowVm
+            {
+                Reg = $"R{i}",
+                Value = _ctrl.Registers[i].ToString(),
+                Qi = _ctrl.RegisterTags[i] ?? ""
+            });
         }
+        RegTable = newReg;
 
         var parts = new List<string>();
         foreach (var kv in _ctrl.FuSlots)
@@ -166,6 +201,7 @@ public class OooViewModel : BaseViewModel
             parts.Add($"{kv.Key}: {(fu.Busy ? (fu.Instr?.ToString() ?? "busy") + $" [{fu.CyclesLeft}]" : "free")}");
         }
         FuStatus = string.Join("  |  ", parts);
+        OnPropertyChanged(nameof(FuStatus));
     }
 
     private static int ParseAddr(string s)

@@ -161,7 +161,7 @@ public class ScoreboardController
         foreach (var fu in FuStatus.Values)
         {
             if (!fu.Busy || fu.ExecDone || !fu.Rj || !fu.Rk) continue;
-            if (fu.CyclesLeft > 0) { fu.CyclesLeft--; return; }
+            if (fu.CyclesLeft > 0) { fu.CyclesLeft--; continue; }
             fu.ExecDone = true;
 
             var entry = InstrStatus.LastOrDefault(e => e.FuName == GetFuName(fu) && e.ExecDoneCycle < 0);

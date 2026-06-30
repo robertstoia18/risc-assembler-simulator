@@ -309,6 +309,29 @@ public class OooController
                 foreach (var bi in BranchBuffer)
                     PrimaryBuffer.Enqueue(bi);
                 BranchBuffer.Clear();
+                var robList = ReorderBuffer.ToList();
+                int branchRobIndex = robList.FindIndex(r => r.Tag == head.Tag);
+
+                var toRemove = new List<IssueWindowEntry>();
+                foreach (var w in InstructionWindow)
+                {
+                    var robEntry = robList.FirstOrDefault(r => r.Tag == w.Tag);
+                    if (robEntry != null && robList.IndexOf(robEntry) > branchRobIndex)
+                    {
+                        toRemove.Add(w);
+                        foreach (var fu in _fuSlots.Values)
+                            if (fu.Tag == w.Tag) { fu.Busy = false; fu.Instr = null; fu.Done = false; }
+                    }
+                }
+                foreach (var w in toRemove)
+                    InstructionWindow.Remove(w);
+
+                while (ReorderBuffer.Count > 0 && ReorderBuffer.Peek().Tag != head.Tag)
+                {
+                    var oldEntry = ReorderBuffer.Dequeue();
+                    foreach (var fu in _fuSlots.Values)
+                        if (fu.Tag == oldEntry.Tag) { fu.Busy = false; fu.Instr = null; fu.Done = false; }
+                }
             }
             else
             {
@@ -348,6 +371,12 @@ public class OooController
             Opcode.CLR  => 0,
             Opcode.LD   => a + imm,
             Opcode.ST   => a + imm,
+            Opcode.BEQ => a == b ? 1 : 0,
+            Opcode.BNE => a != b ? 1 : 0,
+            Opcode.BL => a < b ? 1 : 0,
+            Opcode.BGE => a >= b ? 1 : 0,
+            Opcode.JMP => 1,
+            Opcode.JAL => 1,
             _ => 0
         };
     }

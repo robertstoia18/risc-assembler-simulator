@@ -28,8 +28,19 @@ public class TomasuloViewModel : BaseViewModel
     private readonly TomasuloController _ctrl;
     private readonly Assembler _asm = new();
 
-    public ObservableCollection<RSRowVm> RSTable { get; } = new();
-    public ObservableCollection<RegTagRowVm> RegTable { get; } = new();
+    private ObservableCollection<RSRowVm> _rsTable = new();
+    public ObservableCollection<RSRowVm> RSTable
+    {
+        get => _rsTable;
+        set => Set(ref _rsTable, value);
+    }
+
+    private ObservableCollection<RegTagRowVm> _regTable = new();
+    public ObservableCollection<RegTagRowVm> RegTable
+    {
+        get => _regTable;
+        set => Set(ref _regTable, value);
+    }
 
     private string _cdbInfo = "CDB: —";
     public string CdbInfo { get => _cdbInfo; set => Set(ref _cdbInfo, value); }
@@ -61,9 +72,11 @@ public class TomasuloViewModel : BaseViewModel
 
     private void InitRegTable()
     {
-        RegTable.Clear();
+        var newReg = new ObservableCollection<RegTagRowVm>();
         for (int i = 1; i < 32; i++)
-            RegTable.Add(new RegTagRowVm { Reg = $"R{i}", Value = "0", Qi = "" });
+            newReg.Add(new RegTagRowVm { Reg = $"R{i}", Value = "0", Qi = "" });
+        RegTable = newReg;
+        RSTable = new ObservableCollection<RSRowVm>();
     }
 
     private void OnLoad()
@@ -93,17 +106,17 @@ public class TomasuloViewModel : BaseViewModel
         _ctrl.LoadProgram(new AssemblerResult());
         CycleCount = 0;
         Status = "Reset.";
-        RSTable.Clear();
         InitRegTable();
         CdbInfo = "CDB: —";
     }
 
     private void Refresh()
     {
-        RSTable.Clear();
+        var newRs = new ObservableCollection<RSRowVm>();
         foreach (var kv in _ctrl.ReservationStations)
             foreach (var rs in kv.Value)
-                RSTable.Add(new RSRowVm
+            {
+                newRs.Add(new RSRowVm
                 {
                     Tag = rs.Tag,
                     Busy = rs.Busy ? "Yes" : "No",
@@ -114,17 +127,26 @@ public class TomasuloViewModel : BaseViewModel
                     Qk = rs.Qk ?? "",
                     State = rs.Done ? "Done" : rs.Executing ? "Exec" : rs.Busy ? "Wait" : ""
                 });
+            }
+        RSTable = newRs;
 
-        for (int i = 0; i < RegTable.Count; i++)
+        var newReg = new ObservableCollection<RegTagRowVm>();
+        for (int i = 1; i < 32; i++)
         {
-            var rf = _ctrl.RegisterFile[i + 1];
-            RegTable[i].Value = rf.Value.ToString();
-            RegTable[i].Qi = rf.Qi ?? "";
+            var rf = _ctrl.RegisterFile[i];
+            newReg.Add(new RegTagRowVm
+            {
+                Reg = $"R{i}",
+                Value = rf.Value.ToString(),
+                Qi = rf.Qi ?? ""
+            });
         }
+        RegTable = newReg;
 
         CdbInfo = _ctrl.CdbTag != null
             ? $"CDB: {_ctrl.CdbTag} = {_ctrl.CdbValue}"
             : "CDB: —";
+        OnPropertyChanged(nameof(CdbInfo));
     }
 
     private static int ParseAddr(string s)

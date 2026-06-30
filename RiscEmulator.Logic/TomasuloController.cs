@@ -165,6 +165,24 @@ public class TomasuloController
                 int src = winner.ImmOrOffset;
                 int newIdx = _program.FindIndex(p => p.Address == src);
                 if (newIdx >= 0) _programIndex = newIdx;
+                foreach (var list in ReservationStations.Values)
+                    foreach (var rs in list)
+                    {
+                        if (rs.Busy && rs.Tag != winner.Tag)
+                        {
+                            rs.Busy = false;
+                            rs.Op = null;
+                            rs.Vj = null; rs.Vk = null;
+                            rs.Qj = null; rs.Qk = null;
+                            rs.Dest = 0;
+                            rs.Executing = false;
+                            rs.Done = false;
+                            rs.CyclesLeft = 0;
+                            for (int i = 0; i < 32; i++)
+                                if (RegisterFile[i].Qi == rs.Tag)
+                                    RegisterFile[i].Qi = null;
+                        }
+                    }
             }
         }
 
