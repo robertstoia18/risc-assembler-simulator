@@ -77,11 +77,11 @@ public class Cache
 
     public int Read(int wordAddress, Memory memory)
     {
-        if (!TryRead(wordAddress, out int value))
-        {
-            LoadBlock(wordAddress, memory);
-            TryRead(wordAddress, out value);
-        }
+        if (TryRead(wordAddress, out int value))
+            return value;
+
+        LoadBlock(wordAddress, memory);
+        value = _blocks[GetIndex(wordAddress)].Data[GetOffset(wordAddress)];
         return value;
     }
 

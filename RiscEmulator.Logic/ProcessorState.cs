@@ -56,6 +56,8 @@ public class ProcessorState
         A = 0; B = 0; C = 0;
         Registers.Reset();
         Memory.Reset();
+        ICache.Reset();  
+        DCache.Reset();   
         for (int i = 0; i < 5; i++)
             Slots[i] = new PipelineSlot { Instruction = Instruction.MakeNop() };
     }
