@@ -131,9 +131,6 @@ public class PipelineController
                 continue;
             }
 
-            if (instr.IsBranch && slot.BranchTaken)
-                State.PC = slot.BranchTarget;
-
             if (InstructionSet.WritesRd(instr.Op) && !instr.IsStore && instr.Rd != 0)
                 State.Registers.Write(instr.Rd, slot.C);
         }
@@ -323,16 +320,19 @@ public class PipelineController
 
         bool rs1Needed = InstructionSet.ReadsRs1(instr.Op);
         bool rs2Needed = InstructionSet.ReadsRs2(instr.Op) && instr.SourceMode != AddressingMode.AM;
+        bool rdNeededForSt = instr.IsStore;
 
         bool rs1Valid = !rs1Needed || State.Registers.IsValid(instr.Rs1);
         bool rs2Valid = !rs2Needed || State.Registers.IsValid(instr.Rs2);
+        bool rdValid  = !rdNeededForSt || State.Registers.IsValid(instr.Rd);
 
-        if (!rs1Valid || !rs2Valid)
+        if (!rs1Valid || !rs2Valid || !rdValid)
         {
             bool rs1ForwardOk = rs1Needed && !rs1Valid && CanForward(instr.Rs1);
             bool rs2ForwardOk = rs2Needed && !rs2Valid && CanForward(instr.Rs2);
+            bool rdForwardOk  = rdNeededForSt && !rdValid && CanForward(instr.Rd);
 
-            bool needStall = (!rs1Valid && !rs1ForwardOk) || (!rs2Valid && !rs2ForwardOk);
+            bool needStall = (!rs1Valid && !rs1ForwardOk) || (!rs2Valid && !rs2ForwardOk) || (!rdValid && !rdForwardOk);
             if (needStall) return true;
         }
 
