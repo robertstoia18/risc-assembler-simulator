@@ -141,8 +141,8 @@ public class ScoreboardController
             if (kv.Key == fuName) continue;
             var fu = kv.Value;
             if (!fu.Busy) continue;
-            if (fu.Fj == fi && !fu.Rj) return false;
-            if (fu.Fk == fi && !fu.Rk) return false;
+            if (fu.Fj == fi && !fu.Rj && fu.Qj != fuName) return false;
+            if (fu.Fk == fi && !fu.Rk && fu.Qk != fuName) return false;
         }
         return true;
     }

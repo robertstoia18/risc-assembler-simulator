@@ -31,6 +31,7 @@ public class InstrStatusRowVm
 public class RegResultRowVm
 {
     public string Reg { get; set; } = "";
+    public string Value { get; set; } = "";
     public string Fu { get; set; } = "";
 }
 
@@ -175,6 +176,7 @@ public class ScoreboardViewModel : BaseViewModel
             newReg.Add(new RegResultRowVm
             {
                 Reg = $"R{r}",
+                Value = _ctrl.Registers[r].ToString(),
                 Fu = _ctrl.RegisterResult[r] ?? ""
             });
         }

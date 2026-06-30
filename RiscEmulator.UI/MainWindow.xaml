@@ -407,6 +407,7 @@
                             <DataGrid Grid.Row="1" ItemsSource="{Binding RegResultTable}" Style="{StaticResource AlgoGrid}">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Reg" Binding="{Binding Reg}" Width="40"/>
+                                    <DataGridTextColumn Header="Valoare" Binding="{Binding Value}" Width="60"/>
                                     <DataGridTextColumn Header="FU" Binding="{Binding Fu}" Width="*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
