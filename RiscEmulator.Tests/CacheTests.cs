@@ -138,16 +138,81 @@ public class CacheTests
     [Fact]
     public void Cache_GetSet_ReturnsCorrectBlocks()
     {
-        var memory = new Memory(1024);
-        var cache = new Cache(numSets: 8, blockSize: 4, associativity: 4);
+    var memory = new Memory(1024);
+    var cache = new Cache(numSets: 8, blockSize: 4, associativity: 4);
 
- var set = cache.GetSet(0);
+        var set = cache.GetSet(0);
      Assert.NotNull(set);
         Assert.Equal(4, set.Length);
 
-     for (int i = 0; i < 4; i++)
-     {
+        for (int i = 0; i < 4; i++)
+        {
       Assert.False(set[i].Valid);
         }
     }
+
+    [Fact]
+    public void Cache_Parameterizable_Configuration()
+    {
+        var cache1 = new Cache(numSets: 8, blockSize: 2, associativity: 1);
+        Assert.Equal(8, cache1.NumSets);
+        Assert.Equal(2, cache1.BlockSize);
+   Assert.Equal(1, cache1.Associativity);
+
+        var cache2 = new Cache(numSets: 32, blockSize: 8, associativity: 4);
+   Assert.Equal(32, cache2.NumSets);
+        Assert.Equal(8, cache2.BlockSize);
+     Assert.Equal(4, cache2.Associativity);
+    }
+
+    [Fact]
+    public void Cache_EightWay_SetAssociative_Works()
+    {
+ var memory = new Memory(2048);
+        for (int i = 0; i < 2048; i++)
+       memory.Write(i, i * 5);
+
+        var cache = new Cache(numSets: 16, blockSize: 4, associativity: 8);
+
+        for (int i = 0; i < 8; i++)
+        {
+        int addr = i * 64;
+        cache.Read(addr, memory);
+        }
+
+        Assert.Equal(8, cache.Misses);
+    Assert.Equal(0, cache.Hits);
+
+        for (int i = 0; i < 8; i++)
+        {
+      int addr = i * 64;
+   cache.Read(addr, memory);
+    }
+
+Assert.Equal(8, cache.Misses);
+        Assert.Equal(8, cache.Hits);
+    }
+
+  [Fact]
+    public void ProcessorState_Parameterizable_CacheConfiguration()
+  {
+    var state1 = new ProcessorState(
+            iCacheNumSets: 8, iCacheBlockSize: 2, iCacheAssociativity: 1,
+ dCacheNumSets: 16, dCacheBlockSize: 4, dCacheAssociativity: 2);
+
+     Assert.Equal(8, state1.ICache.NumSets);
+        Assert.Equal(2, state1.ICache.BlockSize);
+   Assert.Equal(1, state1.ICache.Associativity);
+  Assert.Equal(16, state1.DCache.NumSets);
+ Assert.Equal(4, state1.DCache.BlockSize);
+     Assert.Equal(2, state1.DCache.Associativity);
+
+   var state2 = new ProcessorState(
+    iCacheNumSets: 32, iCacheBlockSize: 8, iCacheAssociativity: 4,
+            dCacheNumSets: 32, dCacheBlockSize: 8, dCacheAssociativity: 4);
+
+      Assert.Equal(32, state2.ICache.NumSets);
+        Assert.Equal(8, state2.ICache.BlockSize);
+   Assert.Equal(4, state2.ICache.Associativity);
+ }
 }

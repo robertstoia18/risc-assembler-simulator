@@ -31,10 +31,10 @@ public class ProcessorState
     public int C { get; set; }
 
     public RegisterFile Registers { get; } = new RegisterFile();
-    public Memory Memory { get; } = new Memory();
+ public Memory Memory { get; } = new Memory();
 
-    public Cache ICache { get; } = new Cache(numSets: 16, blockSize: 4, associativity: 2);
-    public Cache DCache { get; } = new Cache(numSets: 16, blockSize: 4, associativity: 2);
+    public Cache ICache { get; }
+    public Cache DCache { get; }
 
     public PipelineSlot[] Slots { get; } = new PipelineSlot[2];
 
@@ -45,11 +45,20 @@ public class ProcessorState
 
     public FunctionalUnit[] FunctionalUnits { get; }
 
-    public ProcessorState()
+    public ProcessorState(
+int iCacheNumSets = 16,
+        int iCacheBlockSize = 4,
+    int iCacheAssociativity = 2,
+        int dCacheNumSets = 16,
+      int dCacheBlockSize = 4,
+        int dCacheAssociativity = 2)
     {
+  ICache = new Cache(iCacheNumSets, iCacheBlockSize, iCacheAssociativity);
+        DCache = new Cache(dCacheNumSets, dCacheBlockSize, dCacheAssociativity);
+
         for (int i = 0; i < 2; i++)
             Slots[i] = new PipelineSlot { Instruction = Instruction.MakeNop() };
-        FunctionalUnits = new[] { AluUnit, MulUnit, LdStUnit, JmpUnit };
+   FunctionalUnits = new[] { AluUnit, MulUnit, LdStUnit, JmpUnit };
     }
 
     public PipelineSlot IF => Slots[(int)PipelineStage.IF];
