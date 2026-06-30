@@ -33,8 +33,8 @@ public class ProcessorState
     public RegisterFile Registers { get; } = new RegisterFile();
     public Memory Memory { get; } = new Memory();
 
-    public Cache ICache { get; } = new Cache(numSets: 16, blockSize: 4);
-    public Cache DCache { get; } = new Cache(numSets: 16, blockSize: 4);
+    public Cache ICache { get; } = new Cache(numSets: 16, blockSize: 4, associativity: 2);
+    public Cache DCache { get; } = new Cache(numSets: 16, blockSize: 4, associativity: 2);
 
     public PipelineSlot[] Slots { get; } = new PipelineSlot[2];
 

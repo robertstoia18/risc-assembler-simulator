@@ -11,9 +11,13 @@ public class CacheBlock
     public bool Valid { get; set; }
     public int Tag { get; set; }
     public int[] Data { get; }
+    public int LastAccessTime { get; set; }
 
     public CacheBlock(int blockSize)
     {
-        Data = new int[blockSize];
+ Data = new int[blockSize];
+    Valid = false;
+        Tag = 0;
+      LastAccessTime = 0;
     }
 }

@@ -91,10 +91,17 @@ public class MainViewModel : BaseViewModel
         for (int i = 0; i < 32; i++)
             Registers.Add(new RegisterViewModel(i));
 
-        for (int i = 0; i < 16; i++)
+        int totalICacheBlocks = _state.ICache.NumSets * _state.ICache.Associativity;
+int totalDCacheBlocks = _state.DCache.NumSets * _state.DCache.Associativity;
+
+ for (int i = 0; i < totalICacheBlocks; i++)
         {
-            ICacheBlocks.Add(new CacheBlockViewModel { Index = i });
-            DCacheBlocks.Add(new CacheBlockViewModel { Index = i });
+    ICacheBlocks.Add(new CacheBlockViewModel { Index = i });
+        }
+
+        for (int i = 0; i < totalDCacheBlocks; i++)
+        {
+          DCacheBlocks.Add(new CacheBlockViewModel { Index = i });
         }
 
         NextClockCommand = new RelayCommand(OnNextClock, () => _programLoaded && !_ctrl.Halted);
@@ -178,28 +185,40 @@ public class MainViewModel : BaseViewModel
         RegC = _state.C;
         CycleCount = _ctrl.CycleCount;
 
+        int blockIndex = 0;
         for (int i = 0; i < ic.NumSets; i++)
-        {
-            var block = ic.Blocks[i];
-            var vm = ICacheBlocks[i];
-            vm.Valid = block.Valid;
-            vm.Tag = block.Tag;
-            vm.DataPreview = string.Join(" ", block.Data.Take(4).Select(d => $"{d:X4}"));
-        }
+    {
+            var set = ic.GetSet(i);
+            for (int j = 0; j < ic.Associativity; j++)
+         {
+  var block = set[j];
+                var vm = ICacheBlocks[blockIndex];
+  vm.Valid = block.Valid;
+   vm.Tag = block.Tag;
+                vm.DataPreview = string.Join(" ", block.Data.Take(4).Select(d => $"{d:X4}"));
+blockIndex++;
+            }
+     }
 
         var dc = _state.DCache;
         DCacheHits = dc.Hits;
         DCacheMisses = dc.Misses;
         DCacheHitRate = dc.HitRate;
         OnPropertyChanged(nameof(DCacheHitRateText));
-        for (int i = 0; i < dc.NumSets; i++)
-        {
-            var block = dc.Blocks[i];
-            var vm = DCacheBlocks[i];
-            vm.Valid = block.Valid;
-            vm.Tag = block.Tag;
-            vm.DataPreview = string.Join(" ", block.Data.Take(4).Select(d => $"{d:X4}"));
-        }
+            blockIndex = 0;
+              for (int i = 0; i < dc.NumSets; i++)
+              {
+             var set = dc.GetSet(i);
+         for (int j = 0; j < dc.Associativity; j++)
+          {
+               var block = set[j];
+              var vm = DCacheBlocks[blockIndex];
+         vm.Valid = block.Valid;
+           vm.Tag = block.Tag;
+                vm.DataPreview = string.Join(" ", block.Data.Take(4).Select(d => $"{d:X4}"));
+        blockIndex++;
+                  }
+            }
 
         for (int i = 0; i < 2; i++)
         {
