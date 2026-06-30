@@ -144,12 +144,12 @@ public class PipelineController
 
         if (instr.IsLoad)
         {
-            slot.C = State.Memory.Read(slot.MAR);
+            slot.C = State.DCache.Read(slot.MAR, State.Memory);
             State.MDR = slot.C;
         }
         else if (instr.IsStore)
         {
-            State.Memory.Write(slot.MAR, slot.C);
+            State.DCache.WriteThrough(slot.MAR, slot.C, State.Memory);
             State.MDR = slot.C;
         }
         else if (instr.Op == Opcode.POP)
@@ -406,7 +406,7 @@ public class PipelineController
             return;
         }
 
-        State.IR = State.Memory.Read(pc);
+        State.IR = State.ICache.Read(pc, State.Memory);
         State.MDR = State.IR;
 
         int wordsUsed = InstructionSet.GetWordCount(instr);

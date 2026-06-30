@@ -33,6 +33,9 @@ public class ProcessorState
     public RegisterFile Registers { get; } = new RegisterFile();
     public Memory Memory { get; } = new Memory();
 
+    public Cache ICache { get; } = new Cache(numSets: 16, blockSize: 4);
+    public Cache DCache { get; } = new Cache(numSets: 16, blockSize: 4);
+
     public PipelineSlot[] Slots { get; } = new PipelineSlot[2];
 
     public FunctionalUnit AluUnit { get; } = new FunctionalUnit("ALU");
@@ -62,6 +65,8 @@ public class ProcessorState
         A = 0; B = 0; C = 0;
         Registers.Reset();
         Memory.Reset();
+        ICache.Reset();
+        DCache.Reset();
         for (int i = 0; i < 2; i++)
             Slots[i] = new PipelineSlot { Instruction = Instruction.MakeNop() };
         foreach (var unit in FunctionalUnits)

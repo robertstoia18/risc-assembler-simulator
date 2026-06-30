@@ -259,11 +259,12 @@
                     </Grid>
                 </Border>
 
-                <!-- Registre + Memorie -->
+                <!-- Registre + Memorie + Cache I/D -->
                 <Grid Grid.Row="2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="3*"/>
                         <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="2.5*"/>
                     </Grid.ColumnDefinitions>
                     <Border Grid.Column="0" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,8,0">
                         <Grid>
@@ -283,7 +284,7 @@
                             </ScrollViewer>
                         </Grid>
                     </Border>
-                    <Border Grid.Column="1" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="6">
+                    <Border Grid.Column="1" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,8,0">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -297,6 +298,153 @@
                                     <DataGridTextColumn Header="" Binding="{Binding PCIndicator}" Width="*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
+                        </Grid>
+                    </Border>
+
+                    <!-- Cache I/D (feature/cache-id-separate) -->
+                    <Border Grid.Column="2" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="6">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="Cache I/D (Direct-Mapped, 16 seturi × 4 cuvinte)" Foreground="#2C5F8A" FontSize="11" FontWeight="Bold" Margin="0,0,0,4"/>
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- I-Cache -->
+                                <Grid Grid.Column="0" Margin="0,0,3,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="I-Cache" Foreground="#1A5276" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
+                                    <Border Grid.Row="1" Background="#EBF5FB" BorderBrush="#AED6F1" BorderThickness="1" CornerRadius="2" Padding="4,2" Margin="0,2,0,2">
+                                        <TextBlock FontFamily="Consolas" FontSize="10" HorizontalAlignment="Center">
+                                            <Run Text="H:" Foreground="#555"/>
+                                            <Run Text="{Binding ICacheHits}" Foreground="#1A7A5A" FontWeight="Bold"/>
+                                            <Run Text="  M:" Foreground="#555"/>
+                                            <Run Text="{Binding ICacheMisses}" Foreground="#C0392B" FontWeight="Bold"/>
+                                            <Run Text="  HR:" Foreground="#555"/>
+                                            <Run Text="{Binding ICacheHitRateText, Mode=OneWay}" Foreground="#1A5276" FontWeight="Bold"/>
+                                        </TextBlock>
+                                    </Border>
+                                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding ICacheBlocks}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Margin="0,1" Padding="2,1" CornerRadius="2" BorderThickness="1">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="#FAFAFA"/>
+                                                                <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Valid}" Value="True">
+                                                                        <Setter Property="Background" Value="#EBF5FB"/>
+                                                                        <Setter Property="BorderBrush" Value="#AED6F1"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="16"/>
+                                                                <ColumnDefinition Width="20"/>
+                                                                <ColumnDefinition Width="32"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="{Binding Index}" FontFamily="Consolas" FontSize="9" Foreground="#999"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding ValidLabel}" FontFamily="Consolas" FontSize="9" FontWeight="Bold">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="#999"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding Valid}" Value="True">
+                                                                                <Setter Property="Foreground" Value="#1A7A5A"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <TextBlock Grid.Column="2" Text="{Binding TagHex}" FontFamily="Consolas" FontSize="9" Foreground="#1A5276"/>
+                                                            <TextBlock Grid.Column="3" Text="{Binding DataPreview}" FontFamily="Consolas" FontSize="9" Foreground="#555" TextTrimming="CharacterEllipsis"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Grid>
+
+                                <!-- D-Cache -->
+                                <Grid Grid.Column="1" Margin="3,0,0,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="D-Cache" Foreground="#8B0000" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
+                                    <Border Grid.Row="1" Background="#FDECEA" BorderBrush="#F5C6CB" BorderThickness="1" CornerRadius="2" Padding="4,2" Margin="0,2,0,2">
+                                        <TextBlock FontFamily="Consolas" FontSize="10" HorizontalAlignment="Center">
+                                            <Run Text="H:" Foreground="#555"/>
+                                            <Run Text="{Binding DCacheHits}" Foreground="#1A7A5A" FontWeight="Bold"/>
+                                            <Run Text="  M:" Foreground="#555"/>
+                                            <Run Text="{Binding DCacheMisses}" Foreground="#C0392B" FontWeight="Bold"/>
+                                            <Run Text="  HR:" Foreground="#555"/>
+                                            <Run Text="{Binding DCacheHitRateText, Mode=OneWay}" Foreground="#8B0000" FontWeight="Bold"/>
+                                        </TextBlock>
+                                    </Border>
+                                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding DCacheBlocks}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Margin="0,1" Padding="2,1" CornerRadius="2" BorderThickness="1">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="#FAFAFA"/>
+                                                                <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Valid}" Value="True">
+                                                                        <Setter Property="Background" Value="#FFF8F8"/>
+                                                                        <Setter Property="BorderBrush" Value="#F5C6CB"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="16"/>
+                                                                <ColumnDefinition Width="20"/>
+                                                                <ColumnDefinition Width="32"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="{Binding Index}" FontFamily="Consolas" FontSize="9" Foreground="#999"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding ValidLabel}" FontFamily="Consolas" FontSize="9" FontWeight="Bold">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="#999"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding Valid}" Value="True">
+                                                                                <Setter Property="Foreground" Value="#C0392B"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <TextBlock Grid.Column="2" Text="{Binding TagHex}" FontFamily="Consolas" FontSize="9" Foreground="#8B0000"/>
+                                                            <TextBlock Grid.Column="3" Text="{Binding DataPreview}" FontFamily="Consolas" FontSize="9" Foreground="#555" TextTrimming="CharacterEllipsis"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Grid>
                         </Grid>
                     </Border>
                 </Grid>

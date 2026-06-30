@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using RiscEmulator.Logic;
-
+using System.Linq;
 namespace RiscEmulator.UI.ViewModels;
 
 public class MainViewModel : BaseViewModel
@@ -15,6 +15,23 @@ public class MainViewModel : BaseViewModel
     private bool _programLoaded;
     private int _cycleCount;
     private int _pc, _mar, _mdr, _ir, _regA, _regB, _regC;
+
+    private int _iCacheHits, _iCacheMisses;
+    private double _iCacheHitRate;
+    private int _dCacheHits, _dCacheMisses;
+    private double _dCacheHitRate;
+    public int ICacheHits { get => _iCacheHits; set => Set(ref _iCacheHits, value); }
+    public int ICacheMisses { get => _iCacheMisses; set => Set(ref _iCacheMisses, value); }
+    public double ICacheHitRate { get => _iCacheHitRate; set => Set(ref _iCacheHitRate, value); }
+    public int DCacheHits { get => _dCacheHits; set => Set(ref _dCacheHits, value); }
+    public int DCacheMisses { get => _dCacheMisses; set => Set(ref _dCacheMisses, value); }
+    public double DCacheHitRate { get => _dCacheHitRate; set => Set(ref _dCacheHitRate, value); }
+
+    public string ICacheHitRateText => $"{ICacheHitRate:P1}";
+    public string DCacheHitRateText => $"{DCacheHitRate:P1}";
+
+    public ObservableCollection<CacheBlockViewModel> ICacheBlocks { get; } = new();
+    public ObservableCollection<CacheBlockViewModel> DCacheBlocks { get; } = new();
 
     public ObservableCollection<PipelineSlotViewModel> PipelineSlots { get; } = new();
     public ObservableCollection<FunctionalUnitViewModel> Units { get; } = new();
@@ -73,6 +90,12 @@ public class MainViewModel : BaseViewModel
 
         for (int i = 0; i < 32; i++)
             Registers.Add(new RegisterViewModel(i));
+
+        for (int i = 0; i < 16; i++)
+        {
+            ICacheBlocks.Add(new CacheBlockViewModel { Index = i });
+            DCacheBlocks.Add(new CacheBlockViewModel { Index = i });
+        }
 
         NextClockCommand = new RelayCommand(OnNextClock, () => _programLoaded && !_ctrl.Halted);
         LoadProgramCommand = new RelayCommand(OnLoadProgram);
@@ -141,6 +164,11 @@ public class MainViewModel : BaseViewModel
 
     private void RefreshUI()
     {
+        var ic = _state.ICache;
+        ICacheHits = ic.Hits;
+        ICacheMisses = ic.Misses;
+        ICacheHitRate = ic.HitRate;
+        OnPropertyChanged(nameof(ICacheHitRateText));
         PC = _state.PC;
         MAR = _state.MAR;
         MDR = _state.MDR;
@@ -149,6 +177,29 @@ public class MainViewModel : BaseViewModel
         RegB = _state.B;
         RegC = _state.C;
         CycleCount = _ctrl.CycleCount;
+
+        for (int i = 0; i < ic.NumSets; i++)
+        {
+            var block = ic.Blocks[i];
+            var vm = ICacheBlocks[i];
+            vm.Valid = block.Valid;
+            vm.Tag = block.Tag;
+            vm.DataPreview = string.Join(" ", block.Data.Take(4).Select(d => $"{d:X4}"));
+        }
+
+        var dc = _state.DCache;
+        DCacheHits = dc.Hits;
+        DCacheMisses = dc.Misses;
+        DCacheHitRate = dc.HitRate;
+        OnPropertyChanged(nameof(DCacheHitRateText));
+        for (int i = 0; i < dc.NumSets; i++)
+        {
+            var block = dc.Blocks[i];
+            var vm = DCacheBlocks[i];
+            vm.Valid = block.Valid;
+            vm.Tag = block.Tag;
+            vm.DataPreview = string.Join(" ", block.Data.Take(4).Select(d => $"{d:X4}"));
+        }
 
         for (int i = 0; i < 2; i++)
         {
