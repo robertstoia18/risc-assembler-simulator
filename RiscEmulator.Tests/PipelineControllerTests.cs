@@ -246,4 +246,146 @@ public class PipelineControllerTests
         Assert.Equal(0x200, state.PC);
         Assert.Equal(2, state.Registers.Read(31));
     }
+
+    [Fact]
+    public void MulInstruction_ComputesProduct()
+    {
+        string src = "MUL R3,R1,R2";
+        var (ctrl, state) = Setup(src, 0);
+
+        state.Registers.Write(1, 6);
+        state.Registers.Write(2, 7);
+
+        for (int i = 0; i < 12; i++) ctrl.Tick();
+
+        Assert.Equal(42, state.Registers.Read(3));
+    }
+
+    [Fact]
+    public void MulInstruction_RoutedToMulUnit()
+    {
+        string src = "MUL R3,R1,R2";
+        var (ctrl, state) = Setup(src, 0);
+
+        state.Registers.Write(1, 3);
+        state.Registers.Write(2, 4);
+
+        ctrl.Tick();
+        ctrl.Tick();
+
+        Assert.Equal(Opcode.MUL, state.MulUnit.ExSlot.Instruction!.Op);
+    }
+
+    [Fact]
+    public void MulStructuralHazard_SecondMulStalls()
+    {
+        string src = "MUL R3,R1,R2\nMUL R6,R4,R5";
+        var (ctrl, state) = Setup(src, 0);
+
+        state.Registers.Write(1, 2);
+        state.Registers.Write(2, 3);
+        state.Registers.Write(4, 4);
+        state.Registers.Write(5, 5);
+
+        for (int i = 0; i < 20; i++) ctrl.Tick();
+
+        Assert.Equal(6, state.Registers.Read(3));
+        Assert.Equal(20, state.Registers.Read(6));
+    }
+
+    [Fact]
+    public void ParallelExecution_AluAndLdst_NoConflict()
+    {
+        string src = "LD R1,(R8)\nADD R2,R3,R4";
+        var (ctrl, state) = Setup(src, 0);
+
+        state.Registers.Write(8, 50);
+        state.Memory.Write(50, 99);
+        state.Registers.Write(3, 10);
+        state.Registers.Write(4, 20);
+
+        for (int i = 0; i < 12; i++) ctrl.Tick();
+
+        Assert.Equal(99, state.Registers.Read(1));
+        Assert.Equal(30, state.Registers.Read(2));
+    }
+
+    [Fact]
+    public void IncInstruction_IncrementsRegister()
+    {
+        string src = "INC R1";
+        var (ctrl, state) = Setup(src, 0);
+
+        state.Registers.Write(1, 10);
+
+        for (int i = 0; i < 8; i++) ctrl.Tick();
+
+        Assert.Equal(11, state.Registers.Read(1));
+    }
+
+    [Fact]
+    public void NegInstruction_NegatesRegister()
+    {
+        string src = "NEG R1";
+        var (ctrl, state) = Setup(src, 0);
+
+        state.Registers.Write(1, 42);
+
+        for (int i = 0; i < 8; i++) ctrl.Tick();
+
+        Assert.Equal(-42, state.Registers.Read(1));
+    }
+
+    [Fact]
+    public void RetInstruction_RestoresPcFromR31()
+    {
+        // RET as only instruction; R31 set to address outside program
+        // StageIF won't find the target address → PC stays fixed at that value
+        string src = "RET";
+        var (ctrl, state) = Setup(src, 0);
+        state.Registers.Write(31, 999);
+
+        for (int i = 0; i < 8; i++) ctrl.Tick();
+
+        Assert.Equal(999, state.PC);
+    }
+
+    [Fact]
+    public void JalThenRet_R31ContainsReturnAddress()
+    {
+        string src = "JAL sub\nnop\nsub: RET";
+        var (ctrl, state) = Setup(src, 0);
+
+        for (int i = 0; i < 20; i++) ctrl.Tick();
+
+        // JAL at addr 0 (2 words) → return addr = 2
+        Assert.Equal(2, state.Registers.Read(31));
+    }
+
+    [Fact]
+    public void FunctionalUnits_AreExposedForUI()
+    {
+        var (ctrl, state) = Setup("ADD R1,R2,R3\nLD R4,(R5)\nMUL R6,R7,R8", 0);
+        Assert.Equal(4, state.FunctionalUnits.Length);
+        Assert.Equal("ALU", state.AluUnit.Name);
+        Assert.Equal("MUL", state.MulUnit.Name);
+        Assert.Equal("LD/ST", state.LdStUnit.Name);
+        Assert.Equal("JMP", state.JmpUnit.Name);
+    }
+
+    [Fact]
+    public void MulForwarding_ResolvesDependencyEarly()
+    {
+        string src = "MUL R1,R2,R3\nADD R4,R1,R5";
+        var (ctrl, state) = Setup(src, 0);
+
+        state.Registers.Write(2, 3);
+        state.Registers.Write(3, 4);
+        state.Registers.Write(5, 10);
+
+        for (int i = 0; i < 20; i++) ctrl.Tick();
+
+        Assert.Equal(12, state.Registers.Read(1));
+        Assert.Equal(22, state.Registers.Read(4));
+    }
 }

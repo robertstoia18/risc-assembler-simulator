@@ -36,19 +36,28 @@ public class ProcessorState
     public Cache ICache { get; } = new Cache(numSets: 16, blockSize: 4);
     public Cache DCache { get; } = new Cache(numSets: 16, blockSize: 4);
 
-    public PipelineSlot[] Slots { get; } = new PipelineSlot[5];
+    public PipelineSlot[] Slots { get; } = new PipelineSlot[2];
+
+    public FunctionalUnit AluUnit { get; } = new FunctionalUnit("ALU");
+    public FunctionalUnit MulUnit { get; } = new FunctionalUnit("MUL");
+    public FunctionalUnit LdStUnit { get; } = new FunctionalUnit("LD/ST");
+    public FunctionalUnit JmpUnit { get; } = new FunctionalUnit("JMP");
+
+    public FunctionalUnit[] FunctionalUnits { get; }
 
     public ProcessorState()
     {
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 2; i++)
             Slots[i] = new PipelineSlot { Instruction = Instruction.MakeNop() };
+        FunctionalUnits = new[] { AluUnit, MulUnit, LdStUnit, JmpUnit };
     }
 
     public PipelineSlot IF => Slots[(int)PipelineStage.IF];
     public PipelineSlot OF => Slots[(int)PipelineStage.OF];
-    public PipelineSlot EX => Slots[(int)PipelineStage.EX];
-    public PipelineSlot MEM => Slots[(int)PipelineStage.MEM];
-    public PipelineSlot WB => Slots[(int)PipelineStage.WB];
+
+    public PipelineSlot EX => AluUnit.ExSlot;
+    public PipelineSlot MEM => AluUnit.MemSlot;
+    public PipelineSlot WB => AluUnit.WbSlot;
 
     public void Reset()
     {
@@ -56,9 +65,11 @@ public class ProcessorState
         A = 0; B = 0; C = 0;
         Registers.Reset();
         Memory.Reset();
-        ICache.Reset();  
-        DCache.Reset();   
-        for (int i = 0; i < 5; i++)
+        ICache.Reset();
+        DCache.Reset();
+        for (int i = 0; i < 2; i++)
             Slots[i] = new PipelineSlot { Instruction = Instruction.MakeNop() };
+        foreach (var unit in FunctionalUnits)
+            unit.Reset();
     }
 }

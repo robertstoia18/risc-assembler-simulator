@@ -16,14 +16,16 @@ public enum InstructionClass
     Class4 = 4
 }
 
+public enum FunctionalUnitType { ALU, MUL, LDST, JMP }
+
 public enum Opcode
 {
     LD, ST,
-    ADD, SUB, AND, OR, XOR,
+    ADD, SUB, AND, OR, XOR, MUL,
     CLR, NEG, INC, DEC, ASL, ASR, LSR, ROL, ROR, RLC, RRC,
-    PUSH, POP, JMP, JAL,
+    PUSH, POP, JMP, JAL, RET, RETI,
     BNE, BEQ, BL, BGE,
-    NOP, HALT, RET, RETI, WAIT
+    NOP, HALT, WAIT
 }
 
 public static class InstructionSet
@@ -39,6 +41,7 @@ public static class InstructionSet
             case Opcode.AND:
             case Opcode.OR:
             case Opcode.XOR:
+            case Opcode.MUL:
                 return InstructionClass.Class1;
 
             case Opcode.CLR:
@@ -56,6 +59,8 @@ public static class InstructionSet
             case Opcode.POP:
             case Opcode.JMP:
             case Opcode.JAL:
+            case Opcode.RET:
+            case Opcode.RETI:
                 return InstructionClass.Class2;
 
             case Opcode.BNE:
@@ -69,6 +74,18 @@ public static class InstructionSet
         }
     }
 
+    public static FunctionalUnitType GetUnitType(Opcode op)
+    {
+        return op switch
+        {
+            Opcode.MUL => FunctionalUnitType.MUL,
+            Opcode.LD or Opcode.ST or Opcode.PUSH or Opcode.POP => FunctionalUnitType.LDST,
+            Opcode.JMP or Opcode.JAL or Opcode.RET or Opcode.RETI or
+            Opcode.BEQ or Opcode.BNE or Opcode.BL or Opcode.BGE => FunctionalUnitType.JMP,
+            _ => FunctionalUnitType.ALU
+        };
+    }
+
     public static bool WritesRd(Opcode op)
     {
         switch (op)
@@ -79,6 +96,7 @@ public static class InstructionSet
             case Opcode.AND:
             case Opcode.OR:
             case Opcode.XOR:
+            case Opcode.MUL:
             case Opcode.CLR:
             case Opcode.NEG:
             case Opcode.INC:
@@ -109,6 +127,7 @@ public static class InstructionSet
             case Opcode.AND:
             case Opcode.OR:
             case Opcode.XOR:
+            case Opcode.MUL:
             case Opcode.NEG:
             case Opcode.INC:
             case Opcode.DEC:
@@ -141,6 +160,7 @@ public static class InstructionSet
             case Opcode.AND:
             case Opcode.OR:
             case Opcode.XOR:
+            case Opcode.MUL:
             case Opcode.BNE:
             case Opcode.BEQ:
             case Opcode.BL:
@@ -176,6 +196,7 @@ public static class InstructionSet
             case Opcode.AND: return 0b0100;
             case Opcode.OR:  return 0b0101;
             case Opcode.XOR: return 0b0110;
+            case Opcode.MUL: return 0b0111;
             default: return -1;
         }
     }
@@ -199,6 +220,8 @@ public static class InstructionSet
             case Opcode.POP:  return 0b0000001100;
             case Opcode.JMP:  return 0b0000001101;
             case Opcode.JAL:  return 0b0000001110;
+            case Opcode.RET:  return 0b0000001111;
+            case Opcode.RETI: return 0b0000010000;
             default: return -1;
         }
     }
