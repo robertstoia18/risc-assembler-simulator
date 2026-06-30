@@ -13,6 +13,7 @@ public class FuScoreboardEntry
     public bool Rk;
     public int Vj;
     public int Vk;
+    public int Imm;
     public int Result;
     public int CyclesLeft;
     public bool ExecDone;
@@ -66,7 +67,7 @@ public class ScoreboardController
             fu.Fi = 0; fu.Fj = 0; fu.Fk = 0;
             fu.Qj = null; fu.Qk = null;
             fu.Rj = false; fu.Rk = false;
-            fu.Vj = 0; fu.Vk = 0;
+            fu.Vj = 0; fu.Vk = 0; fu.Imm = 0;
             fu.Result = 0; fu.CyclesLeft = 0; fu.ExecDone = false;
         }
     }
@@ -100,7 +101,9 @@ public class ScoreboardController
                 if (!entry!.Instr.IsStore && !entry.Instr.IsBranch && !entry.Instr.IsJump && fu.Fi != 0)
                     Registers[fu.Fi] = fu.Result;
 
-                if (fu.Op == Opcode.ST || fu.Op == Opcode.PUSH)
+                if (fu.Op == Opcode.ST)
+                    Memory.Write(fu.Result, fu.Vk);
+                else if (fu.Op == Opcode.PUSH)
                     Memory.Write(fu.Result, fu.Vj);
                 if (fu.Op == Opcode.LD || fu.Op == Opcode.POP)
                     Registers[fu.Fi] = Memory.Read(fu.Result);
@@ -113,8 +116,15 @@ public class ScoreboardController
                 {
                     var fu2 = kv2.Value;
                     if (!fu2.Busy) continue;
-                    if (fu2.Qj == kv.Key) { fu2.Vj = fu.Result; fu2.Rj = true; fu2.Qj = null; }
-                    if (fu2.Qk == kv.Key) { fu2.Vk = fu.Result; fu2.Rk = true; fu2.Qk = null; }
+                    bool rjSet = false, rkSet = false;
+                    if (fu2.Qj == kv.Key) { fu2.Vj = fu.Result; fu2.Rj = true; fu2.Qj = null; rjSet = true; }
+                    if (fu2.Qk == kv.Key) { fu2.Vk = fu.Result; fu2.Rk = true; fu2.Qk = null; rkSet = true; }
+                    if ((rjSet || rkSet) && fu2.Rj && fu2.Rk && !fu2.ExecDone)
+                    {
+                        fu2.CyclesLeft = GetExecCycles(fu2.Op) - 1;
+                        var rdEntry = InstrStatus.LastOrDefault(e => e.FuName == kv2.Key && e.ReadCycle < 0);
+                        if (rdEntry != null) rdEntry.ReadCycle = CycleCount;
+                    }
                 }
 
                 fu.Busy = false;
@@ -194,7 +204,7 @@ public class ScoreboardController
             Opcode.NEG => -fu.Vj,
             Opcode.CLR => 0,
             Opcode.LD  => fu.Vj + fu.Vk,
-            Opcode.ST  => fu.Vj + fu.Vk,
+            Opcode.ST  => fu.Vj + fu.Imm,
             Opcode.POP => fu.Vj,
             Opcode.PUSH => fu.Vj,
             _ => 0
@@ -266,6 +276,7 @@ public class ScoreboardController
         fu.Fi = rd;
         fu.Fj = rs1;
         fu.Fk = rs2;
+        fu.Imm = instr.Immediate;
         fu.ExecDone = false;
 
         if (rs1 == 0 || RegisterResult[rs1] == null)

@@ -109,13 +109,10 @@ public class TomasuloController
         string? winnerFu = null;
 
         foreach (var kv in ReservationStations)
-            foreach (var rs in kv.Value)
-                if (rs.Busy && rs.Done)
-                {
-                    winner = rs;
-                    winnerFu = kv.Key;
-                    break;
-                }
+        {
+            winner = kv.Value.FirstOrDefault(rs => rs.Busy && rs.Done);
+            if (winner != null) { winnerFu = kv.Key; break; }
+        }
 
         if (winner == null) return;
 
@@ -126,7 +123,7 @@ public class TomasuloController
             CdbValue = Memory.Read(winner.Result);
         if (winner.Op == Opcode.ST || winner.Op == Opcode.PUSH)
         {
-            Memory.Write(winner.Result, winner.Vj ?? 0);
+            Memory.Write(winner.Result, winner.Vk ?? 0);
             winner.Busy = false;
             winner.Done = false;
             return;

@@ -316,21 +316,46 @@ public class Assembler
     {
         var ops = SplitOperands(operands);
         if (ops.Length < 3)
-            throw new AssemblerException(lineNum, "MUL necesită 3 operanzi: Rd, Rs1, Rs2");
+            throw new AssemblerException(lineNum, "MUL necesită 3 operanzi: Rd, Rs1, Rs2 sau Rd, Rs1, #imm");
 
         var instr = new Instruction { Op = Opcode.MUL, Class = InstructionClass.Class1 };
         instr.Rd = ParseRegister(ops[0], lineNum);
         instr.Rs1 = ParseRegister(ops[1], lineNum);
-        instr.Rs2 = ParseRegister(ops[2], lineNum);
-        instr.SourceMode = AddressingMode.AD;
         instr.DestMode = AddressingMode.AD;
 
-        int word = (InstructionSet.GetClass1Opcode(Opcode.MUL) << 12)
-                 | ((int)AddressingMode.AD << 10)
-                 | (instr.Rs1 << 6)
-                 | ((int)AddressingMode.AD << 4)
-                 | (instr.Rd & 0xF);
-        return (instr, new List<int> { word });
+        string third = ops[2].Trim();
+        var words = new List<int>();
+
+        if (third.StartsWith('#'))
+        {
+            if (!TryParseNumber(third[1..], out int imm))
+                throw new AssemblerException(lineNum, $"Valoare imediată invalidă: '{third}'");
+            instr.SourceMode = AddressingMode.AM;
+            instr.Immediate = imm;
+            instr.Rs2 = 0;
+
+            int word = (InstructionSet.GetClass1Opcode(Opcode.MUL) << 12)
+                     | ((int)AddressingMode.AM << 10)
+                     | (instr.Rs1 << 6)
+                     | ((int)AddressingMode.AD << 4)
+                     | (instr.Rd & 0xF);
+            words.Add(word);
+            words.Add(imm & 0xFFFF);
+        }
+        else
+        {
+            instr.Rs2 = ParseRegister(third, lineNum);
+            instr.SourceMode = AddressingMode.AD;
+
+            int word = (InstructionSet.GetClass1Opcode(Opcode.MUL) << 12)
+                     | ((int)AddressingMode.AD << 10)
+                     | (instr.Rs1 << 6)
+                     | ((int)AddressingMode.AD << 4)
+                     | (instr.Rd & 0xF);
+            words.Add(word);
+        }
+
+        return (instr, words);
     }
 
     private (Instruction, List<int>) EncodeClass2(string mnem, string operands, Dictionary<string, int> labels, int lineNum)
@@ -481,8 +506,15 @@ public class Assembler
             case "RET":
             case "RETI":
             case "WAIT":
-            case "MUL":
                 return 1;
+
+            case "MUL":
+            {
+                var ops = SplitOperands(operands);
+                if (ops.Length >= 3 && ops[2].Trim().StartsWith('#'))
+                    return 2;
+                return 1;
+            }
 
             case "BNE": case "BEQ": case "BL": case "BGE":
                 return 2;
