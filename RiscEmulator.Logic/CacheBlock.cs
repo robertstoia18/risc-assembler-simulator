@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RiscEmulator.Logic;
+﻿namespace RiscEmulator.Logic;
 
 public class CacheBlock
 {
@@ -13,14 +7,15 @@ public class CacheBlock
     public int Tag { get; set; }
     public int[] Data { get; }
     public int LastAccessTime { get; set; }
+    public bool ReferenceBit { get; set; }
 
     public CacheBlock(int blockSize)
     {
-
         Data = new int[blockSize];
         Valid = false;
         Dirty = false;
         Tag = 0;
         LastAccessTime = 0;
+        ReferenceBit = false;
     }
 }

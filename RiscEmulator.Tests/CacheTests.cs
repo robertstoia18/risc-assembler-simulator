@@ -193,7 +193,73 @@ Assert.Equal(8, cache.Misses);
         Assert.Equal(8, cache.Hits);
     }
 
-  [Fact]
+    [Fact]
+    public void Cache_ReplacementPolicy_IsConfigurable()
+    {
+        var random = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.Random);
+        var lruExact = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruExact);
+        var lruApprox = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruApproximate);
+
+        Assert.Equal(ReplacementPolicy.Random, random.Policy);
+        Assert.Equal(ReplacementPolicy.LruExact, lruExact.Policy);
+        Assert.Equal(ReplacementPolicy.LruApproximate, lruApprox.Policy);
+    }
+
+    [Fact]
+    public void Cache_DefaultPolicy_IsRandom()
+    {
+        var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2);
+        Assert.Equal(ReplacementPolicy.Random, cache.Policy);
+    }
+
+    [Fact]
+    public void LruExact_EvictsLeastRecentlyUsed()
+    {
+        var memory = new Memory(1024);
+        for (int i = 0; i < 1024; i++)
+            memory.Write(i, i);
+
+        var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruExact);
+
+        cache.Read(0, memory);
+        cache.Read(64, memory);
+        cache.Read(0, memory);
+
+        cache.Read(128, memory);
+
+        int missesBefore = cache.Misses;
+        cache.Read(0, memory);
+        Assert.Equal(missesBefore, cache.Misses);
+
+        cache.Read(64, memory);
+        Assert.Equal(missesBefore + 1, cache.Misses);
+    }
+
+    [Fact]
+    public void LruApproximate_SecondChance_GivesSecondChance()
+    {
+        var memory = new Memory(1024);
+        for (int i = 0; i < 1024; i++)
+            memory.Write(i, i);
+
+        var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruApproximate);
+
+        cache.Read(0, memory);
+        cache.Read(64, memory);
+
+        cache.Read(128, memory);
+
+        cache.Read(256, memory);
+
+        int missesBefore = cache.Misses;
+        cache.Read(128, memory);
+        Assert.Equal(missesBefore, cache.Misses);
+
+        cache.Read(64, memory);
+        Assert.Equal(missesBefore + 1, cache.Misses);
+    }
+
+    [Fact]
     public void ProcessorState_Parameterizable_CacheConfiguration()
   {
     var state1 = new ProcessorState(
