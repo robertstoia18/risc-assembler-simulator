@@ -193,7 +193,79 @@ Assert.Equal(8, cache.Misses);
         Assert.Equal(8, cache.Hits);
     }
 
-  [Fact]
+    [Fact]
+    public void Cache_ReplacementPolicy_IsConfigurable()
+    {
+        var random = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.Random);
+        var lruExact = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruExact);
+        var lruApprox = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruApproximate);
+
+        Assert.Equal(ReplacementPolicy.Random, random.Policy);
+        Assert.Equal(ReplacementPolicy.LruExact, lruExact.Policy);
+        Assert.Equal(ReplacementPolicy.LruApproximate, lruApprox.Policy);
+    }
+
+    [Fact]
+    public void Cache_DefaultPolicy_IsRandom()
+    {
+        var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2);
+        Assert.Equal(ReplacementPolicy.Random, cache.Policy);
+    }
+
+    [Fact]
+    public void LruExact_EvictsLeastRecentlyUsed()
+    {
+        var memory = new Memory(1024);
+        for (int i = 0; i < 1024; i++)
+            memory.Write(i, i);
+
+        // numSets=4, blockSize=4 => index = (addr/4) % 4. Adresele 0, 64, 128 cad toate in set 0.
+        var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruExact);
+
+        cache.Read(0, memory);    // miss -> way0
+        cache.Read(64, memory);   // miss -> way1 (set plin)
+        cache.Read(0, memory);    // hit  -> 0 devine cel mai recent, 64 devine LRU
+
+        cache.Read(128, memory);  // miss -> evacueaza LRU = 64
+
+        int missesBefore = cache.Misses;
+        cache.Read(0, memory);    // trebuie sa fie inca prezent -> hit
+        Assert.Equal(missesBefore, cache.Misses);
+
+        cache.Read(64, memory);   // a fost evacuat -> miss
+        Assert.Equal(missesBefore + 1, cache.Misses);
+    }
+
+    [Fact]
+    public void LruApproximate_SecondChance_GivesSecondChance()
+    {
+        var memory = new Memory(1024);
+        for (int i = 0; i < 1024; i++)
+            memory.Write(i, i);
+
+        // 0, 64, 128, 256 cad toate in set 0 (index 0), cu taguri diferite.
+        var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruApproximate);
+
+        cache.Read(0, memory);    // miss -> way0, ref=1
+        cache.Read(64, memory);   // miss -> way1, ref=1 (set plin, ambele ref=1)
+
+        // Clock: curata ref de pe way0 si way1, apoi evacueaza way0.
+        // Rezultat: way0=128 (ref=1), way1=64 (ref=0).
+        cache.Read(128, memory);  // miss -> evacueaza 0
+
+        // Clock porneste de pe way1 (ref=0) => victima imediata = 64.
+        // Blocul 128 (ref=1) primeste "a doua sansa" si supravietuieste.
+        cache.Read(256, memory);  // miss -> evacueaza 64, nu 128
+
+        int missesBefore = cache.Misses;
+        cache.Read(128, memory);  // a supravietuit -> hit
+        Assert.Equal(missesBefore, cache.Misses);
+
+        cache.Read(64, memory);   // a fost evacuat -> miss
+        Assert.Equal(missesBefore + 1, cache.Misses);
+    }
+
+    [Fact]
     public void ProcessorState_Parameterizable_CacheConfiguration()
   {
     var state1 = new ProcessorState(

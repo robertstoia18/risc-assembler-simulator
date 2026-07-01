@@ -12,7 +12,9 @@ public class Cache
     private readonly int _blockSize;
     private readonly int _numSets;
     private readonly int _associativity;
+    private readonly ReplacementPolicy _policy;
     private readonly Random _random;
+    private readonly int[] _clockPointer;
     private int _accessCounter;
 
     public int Hits { get; private set; }
@@ -20,12 +22,15 @@ public class Cache
     public int TotalAccesses => Hits + Misses;
     public double HitRate => TotalAccesses == 0 ? 0.0 : (double)Hits / TotalAccesses;
 
-    public Cache(int numSets = 16, int blockSize = 4, int associativity = 1)
+    public Cache(int numSets = 16, int blockSize = 4, int associativity = 1,
+        ReplacementPolicy policy = ReplacementPolicy.Random)
     {
         _numSets = numSets;
    _blockSize = blockSize;
         _associativity = associativity;
+        _policy = policy;
         _random = new Random();
+        _clockPointer = new int[numSets];
    _accessCounter = 0;
 
         _sets = new CacheBlock[numSets][];
@@ -57,6 +62,7 @@ public class Cache
                 {
              value = block.Data[offset];
             block.LastAccessTime = _accessCounter;
+            block.ReferenceBit = true;
          Hits++;
      return true;
          }
@@ -88,15 +94,51 @@ if (!set[i].Valid)
 
         if (targetBlock == null)
         {
-            int victimIndex = _random.Next(_associativity);
+            int victimIndex = SelectVictim(set, idx);
    targetBlock = set[victimIndex];
      }
 
         targetBlock.Tag = tag;
         targetBlock.Valid = true;
         targetBlock.LastAccessTime = _accessCounter;
+        targetBlock.ReferenceBit = true;
         for (int i = 0; i < _blockSize; i++)
             targetBlock.Data[i] = memory.Read(blockStart + i);
+    }
+
+    /// <summary>
+    /// Alege indexul blocului victima dintr-un set plin, conform politicii de inlocuire.
+    /// </summary>
+    private int SelectVictim(CacheBlock[] set, int idx)
+    {
+        switch (_policy)
+        {
+            case ReplacementPolicy.LruExact:
+                // Victima = blocul cu cel mai vechi timestamp de acces.
+                int lruIndex = 0;
+                for (int i = 1; i < _associativity; i++)
+                {
+                    if (set[i].LastAccessTime < set[lruIndex].LastAccessTime)
+                        lruIndex = i;
+                }
+                return lruIndex;
+
+            case ReplacementPolicy.LruApproximate:
+                // NRU / Second-Chance (clock): cauta primul bloc cu ReferenceBit = false,
+                // curatand bitii intalniti pe drum (le acorda "a doua sansa").
+                int ptr = _clockPointer[idx];
+                while (set[ptr].ReferenceBit)
+                {
+                    set[ptr].ReferenceBit = false;
+                    ptr = (ptr + 1) % _associativity;
+                }
+                _clockPointer[idx] = (ptr + 1) % _associativity;
+                return ptr;
+
+            case ReplacementPolicy.Random:
+            default:
+                return _random.Next(_associativity);
+        }
     }
 
     public void WriteThrough(int wordAddress, int value, Memory memory)
@@ -117,6 +159,7 @@ if (!set[i].Valid)
       {
  block.Data[offset] = value;
         block.LastAccessTime = _accessCounter;
+                block.ReferenceBit = true;
 break;
           }
         }
@@ -159,8 +202,10 @@ break;
          block.Valid = false;
      block.Tag = 0;
   block.LastAccessTime = 0;
+                block.ReferenceBit = false;
        Array.Clear(block.Data, 0, block.Data.Length);
             }
+            _clockPointer[i] = 0;
         }
     }
 
@@ -185,4 +230,5 @@ break;
   public int BlockSize => _blockSize;
     public int NumSets => _numSets;
     public int Associativity => _associativity;
+    public ReplacementPolicy Policy => _policy;
 }

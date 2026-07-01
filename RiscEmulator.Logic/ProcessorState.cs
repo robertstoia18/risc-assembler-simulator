@@ -51,10 +51,12 @@ int iCacheNumSets = 16,
     int iCacheAssociativity = 2,
         int dCacheNumSets = 16,
       int dCacheBlockSize = 4,
-        int dCacheAssociativity = 2)
+        int dCacheAssociativity = 2,
+        ReplacementPolicy iCacheReplacementPolicy = ReplacementPolicy.LruExact,
+        ReplacementPolicy dCacheReplacementPolicy = ReplacementPolicy.LruExact)
     {
-  ICache = new Cache(iCacheNumSets, iCacheBlockSize, iCacheAssociativity);
-        DCache = new Cache(dCacheNumSets, dCacheBlockSize, dCacheAssociativity);
+  ICache = new Cache(iCacheNumSets, iCacheBlockSize, iCacheAssociativity, iCacheReplacementPolicy);
+        DCache = new Cache(dCacheNumSets, dCacheBlockSize, dCacheAssociativity, dCacheReplacementPolicy);
 
         for (int i = 0; i < 2; i++)
             Slots[i] = new PipelineSlot { Instruction = Instruction.MakeNop() };

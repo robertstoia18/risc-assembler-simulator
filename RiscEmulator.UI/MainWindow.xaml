@@ -308,7 +308,36 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="Cache I/D (Direct-Mapped, 16 seturi × 4 cuvinte)" Foreground="#2C5F8A" FontSize="11" FontWeight="Bold" Margin="0,0,0,4"/>
+                            <StackPanel Grid.Row="0" Margin="0,0,0,4">
+                                <TextBlock Text="Cache I/D — politica de inlocuire" Foreground="#2C5F8A" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock FontSize="9" Foreground="#666" FontFamily="Consolas">
+                                    <Run Text="I: "/>
+                                    <Run Text="{Binding ICacheConfig, Mode=OneWay}"/>
+                                </TextBlock>
+                                <TextBlock FontSize="9" Foreground="#666" FontFamily="Consolas">
+                                    <Run Text="D: "/>
+                                    <Run Text="{Binding DCacheConfig, Mode=OneWay}"/>
+                                </TextBlock>
+                                <Grid Margin="0,3,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="I:" FontSize="10" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                    <ComboBox Grid.Column="1" FontSize="10" Margin="0,0,4,0"
+                                              ItemsSource="{Binding AvailablePolicies}"
+                                              SelectedItem="{Binding ICacheReplacementPolicy}"/>
+                                    <TextBlock Grid.Column="2" Text="D:" FontSize="10" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                    <ComboBox Grid.Column="3" FontSize="10" Margin="0,0,4,0"
+                                              ItemsSource="{Binding AvailablePolicies}"
+                                              SelectedItem="{Binding DCacheReplacementPolicy}"/>
+                                    <Button Grid.Column="4" Content="Aplica" FontSize="10" Padding="6,1"
+                                            Command="{Binding ReconfigureCacheCommand}"/>
+                                </Grid>
+                            </StackPanel>
                             <Grid Grid.Row="1">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>

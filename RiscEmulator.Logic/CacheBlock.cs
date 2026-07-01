@@ -13,11 +13,15 @@ public class CacheBlock
     public int[] Data { get; }
     public int LastAccessTime { get; set; }
 
+    // Bit de referinta pentru LRU aproximativ (NRU / Second-Chance).
+    public bool ReferenceBit { get; set; }
+
     public CacheBlock(int blockSize)
     {
  Data = new int[blockSize];
     Valid = false;
         Tag = 0;
       LastAccessTime = 0;
+        ReferenceBit = false;
     }
 }

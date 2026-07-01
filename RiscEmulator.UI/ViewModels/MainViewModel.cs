@@ -82,6 +82,8 @@ public class MainViewModel : BaseViewModel
     private int _dCacheNumSets = 16;
   private int _dCacheBlockSize = 4;
     private int _dCacheAssociativity = 2;
+    private ReplacementPolicy _iCacheReplacementPolicy = ReplacementPolicy.LruExact;
+    private ReplacementPolicy _dCacheReplacementPolicy = ReplacementPolicy.LruExact;
 
     public int ICacheNumSets { get => _iCacheNumSets; set => Set(ref _iCacheNumSets, value); }
     public int ICacheBlockSize { get => _iCacheBlockSize; set => Set(ref _iCacheBlockSize, value); }
@@ -90,8 +92,23 @@ public class MainViewModel : BaseViewModel
     public int DCacheBlockSize { get => _dCacheBlockSize; set => Set(ref _dCacheBlockSize, value); }
     public int DCacheAssociativity { get => _dCacheAssociativity; set => Set(ref _dCacheAssociativity, value); }
 
-    public string ICacheConfig => $"{ICacheNumSets}×{ICacheAssociativity}×{ICacheBlockSize} ({ICacheNumSets * ICacheAssociativity * ICacheBlockSize} words)";
-    public string DCacheConfig => $"{DCacheNumSets}×{DCacheAssociativity}×{DCacheBlockSize} ({DCacheNumSets * DCacheAssociativity * DCacheBlockSize} words)";
+    public ReplacementPolicy ICacheReplacementPolicy
+    {
+        get => _iCacheReplacementPolicy;
+        set { if (Set(ref _iCacheReplacementPolicy, value)) OnPropertyChanged(nameof(ICacheConfig)); }
+    }
+
+    public ReplacementPolicy DCacheReplacementPolicy
+    {
+        get => _dCacheReplacementPolicy;
+        set { if (Set(ref _dCacheReplacementPolicy, value)) OnPropertyChanged(nameof(DCacheConfig)); }
+    }
+
+    public IReadOnlyList<ReplacementPolicy> AvailablePolicies { get; } =
+        (ReplacementPolicy[])System.Enum.GetValues(typeof(ReplacementPolicy));
+
+    public string ICacheConfig => $"{ICacheNumSets}×{ICacheAssociativity}×{ICacheBlockSize} ({ICacheNumSets * ICacheAssociativity * ICacheBlockSize} words) — {ICacheReplacementPolicy}";
+    public string DCacheConfig => $"{DCacheNumSets}×{DCacheAssociativity}×{DCacheBlockSize} ({DCacheNumSets * DCacheAssociativity * DCacheBlockSize} words) — {DCacheReplacementPolicy}";
 
     private static readonly string[] SlotNames = { "IF", "DEC/OF" };
     private static readonly string[] UnitNames = { "ALU", "MUL", "LD/ST", "JMP" };
@@ -127,7 +144,9 @@ iCacheBlockSize: _iCacheBlockSize,
             iCacheAssociativity: _iCacheAssociativity,
           dCacheNumSets: _dCacheNumSets,
           dCacheBlockSize: _dCacheBlockSize,
-            dCacheAssociativity: _dCacheAssociativity);
+            dCacheAssociativity: _dCacheAssociativity,
+            iCacheReplacementPolicy: _iCacheReplacementPolicy,
+            dCacheReplacementPolicy: _dCacheReplacementPolicy);
    _ctrl = new PipelineController(_state);
     }
 
