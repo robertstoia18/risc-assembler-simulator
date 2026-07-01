@@ -1,4 +1,4 @@
-namespace RiscEmulator.Logic;
+﻿namespace RiscEmulator.Logic;
 
 public class PipelineSlot
 {
@@ -31,7 +31,7 @@ public class ProcessorState
     public int C { get; set; }
 
     public RegisterFile Registers { get; } = new RegisterFile();
- public Memory Memory { get; } = new Memory();
+    public Memory Memory { get; } = new Memory();
 
     public Cache ICache { get; }
     public Cache DCache { get; }
@@ -46,21 +46,24 @@ public class ProcessorState
     public FunctionalUnit[] FunctionalUnits { get; }
 
     public ProcessorState(
-int iCacheNumSets = 16,
+        int iCacheNumSets = 16,
         int iCacheBlockSize = 4,
-    int iCacheAssociativity = 2,
+        int iCacheAssociativity = 2,
         int dCacheNumSets = 16,
-      int dCacheBlockSize = 4,
+        int dCacheBlockSize = 4,
         int dCacheAssociativity = 2,
         ReplacementPolicy iCacheReplacementPolicy = ReplacementPolicy.LruExact,
-        ReplacementPolicy dCacheReplacementPolicy = ReplacementPolicy.LruExact)
+        ReplacementPolicy dCacheReplacementPolicy = ReplacementPolicy.LruExact,
+        WritePolicy dCacheWritePolicy = WritePolicy.WriteThrough,
+        bool dCacheUseWriteBuffer = false,
+        int dCacheWriteBufferCapacity = 4)
     {
-  ICache = new Cache(iCacheNumSets, iCacheBlockSize, iCacheAssociativity, iCacheReplacementPolicy);
-        DCache = new Cache(dCacheNumSets, dCacheBlockSize, dCacheAssociativity, dCacheReplacementPolicy);
+        ICache = new Cache(iCacheNumSets, iCacheBlockSize, iCacheAssociativity, iCacheReplacementPolicy);
+        DCache = new Cache(dCacheNumSets, dCacheBlockSize, dCacheAssociativity, dCacheReplacementPolicy, dCacheWritePolicy, dCacheUseWriteBuffer, dCacheWriteBufferCapacity);
 
         for (int i = 0; i < 2; i++)
             Slots[i] = new PipelineSlot { Instruction = Instruction.MakeNop() };
-   FunctionalUnits = new[] { AluUnit, MulUnit, LdStUnit, JmpUnit };
+        FunctionalUnits = new[] { AluUnit, MulUnit, LdStUnit, JmpUnit };
     }
 
     public PipelineSlot IF => Slots[(int)PipelineStage.IF];

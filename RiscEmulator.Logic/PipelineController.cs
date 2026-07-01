@@ -64,6 +64,9 @@ public class PipelineController
 
         StageWB_AllUnits();
         StageMEM_LdSt();
+
+        State.DCache.TickWriteBuffer(State.Memory);
+
         StageEX_AllUnits();
         StageForwardingSetup();
 
@@ -86,7 +89,9 @@ public class PipelineController
             DisplaySlots[i] = new PipelineSlot
             {
                 Instruction = src.Instruction,
-                A = src.A, B = src.B, C = src.C,
+                A = src.A,
+                B = src.B,
+                C = src.C,
                 MAR = src.MAR,
                 IsStall = src.IsStall,
                 BranchTaken = src.BranchTaken,
@@ -107,7 +112,9 @@ public class PipelineController
     private static PipelineSlot CloneSlot(PipelineSlot s) => new PipelineSlot
     {
         Instruction = s.Instruction,
-        A = s.A, B = s.B, C = s.C,
+        A = s.A,
+        B = s.B,
+        C = s.C,
         MAR = s.MAR,
         IsStall = s.IsStall,
         BranchTaken = s.BranchTaken,
@@ -149,7 +156,7 @@ public class PipelineController
         }
         else if (instr.IsStore)
         {
-            State.DCache.WriteThrough(slot.MAR, slot.C, State.Memory);
+            State.DCache.Write(slot.MAR, slot.C, State.Memory);
             State.MDR = slot.C;
         }
         else if (instr.Op == Opcode.POP)
@@ -324,13 +331,13 @@ public class PipelineController
 
         bool rs1Valid = !rs1Needed || State.Registers.IsValid(instr.Rs1);
         bool rs2Valid = !rs2Needed || State.Registers.IsValid(instr.Rs2);
-        bool rdValid  = !rdNeededForSt || State.Registers.IsValid(instr.Rd);
+        bool rdValid = !rdNeededForSt || State.Registers.IsValid(instr.Rd);
 
         if (!rs1Valid || !rs2Valid || !rdValid)
         {
             bool rs1ForwardOk = rs1Needed && !rs1Valid && CanForward(instr.Rs1);
             bool rs2ForwardOk = rs2Needed && !rs2Valid && CanForward(instr.Rs2);
-            bool rdForwardOk  = rdNeededForSt && !rdValid && CanForward(instr.Rd);
+            bool rdForwardOk = rdNeededForSt && !rdValid && CanForward(instr.Rd);
 
             bool needStall = (!rs1Valid && !rs1ForwardOk) || (!rs2Valid && !rs2ForwardOk) || (!rdValid && !rdForwardOk);
             if (needStall) return true;
@@ -355,8 +362,8 @@ public class PipelineController
         slot.A = a;
         slot.B = b;
         slot.C = c;
-        State.A = a;   
-        State.B = b;   
+        State.A = a;
+        State.B = b;
         State.C = c;
 
         if (InstructionSet.WritesRd(instr.Op) && !instr.IsStore && instr.Rd != 0)
