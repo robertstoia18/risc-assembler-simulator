@@ -84,6 +84,7 @@ public class MainViewModel : BaseViewModel
     private int _dCacheAssociativity = 2;
     private ReplacementPolicy _iCacheReplacementPolicy = ReplacementPolicy.LruExact;
     private ReplacementPolicy _dCacheReplacementPolicy = ReplacementPolicy.LruExact;
+    private WritePolicy _dCacheWritePolicy = WritePolicy.WriteThrough;
 
     public int ICacheNumSets { get => _iCacheNumSets; set => Set(ref _iCacheNumSets, value); }
     public int ICacheBlockSize { get => _iCacheBlockSize; set => Set(ref _iCacheBlockSize, value); }
@@ -104,11 +105,20 @@ public class MainViewModel : BaseViewModel
         set { if (Set(ref _dCacheReplacementPolicy, value)) OnPropertyChanged(nameof(DCacheConfig)); }
     }
 
+    public WritePolicy DCacheWritePolicy
+    {
+        get => _dCacheWritePolicy;
+        set { if (Set(ref _dCacheWritePolicy, value)) OnPropertyChanged(nameof(DCacheConfig)); }
+    }
+
     public IReadOnlyList<ReplacementPolicy> AvailablePolicies { get; } =
         (ReplacementPolicy[])System.Enum.GetValues(typeof(ReplacementPolicy));
 
+    public IReadOnlyList<WritePolicy> AvailableWritePolicies { get; } =
+        (WritePolicy[])System.Enum.GetValues(typeof(WritePolicy));
+
     public string ICacheConfig => $"{ICacheNumSets}×{ICacheAssociativity}×{ICacheBlockSize} ({ICacheNumSets * ICacheAssociativity * ICacheBlockSize} words) — {ICacheReplacementPolicy}";
-    public string DCacheConfig => $"{DCacheNumSets}×{DCacheAssociativity}×{DCacheBlockSize} ({DCacheNumSets * DCacheAssociativity * DCacheBlockSize} words) — {DCacheReplacementPolicy}";
+    public string DCacheConfig => $"{DCacheNumSets}×{DCacheAssociativity}×{DCacheBlockSize} ({DCacheNumSets * DCacheAssociativity * DCacheBlockSize} words) — {DCacheReplacementPolicy}, {DCacheWritePolicy}";
 
     private static readonly string[] SlotNames = { "IF", "DEC/OF" };
     private static readonly string[] UnitNames = { "ALU", "MUL", "LD/ST", "JMP" };
@@ -146,7 +156,8 @@ iCacheBlockSize: _iCacheBlockSize,
           dCacheBlockSize: _dCacheBlockSize,
             dCacheAssociativity: _dCacheAssociativity,
             iCacheReplacementPolicy: _iCacheReplacementPolicy,
-            dCacheReplacementPolicy: _dCacheReplacementPolicy);
+            dCacheReplacementPolicy: _dCacheReplacementPolicy,
+            dCacheWritePolicy: _dCacheWritePolicy);
    _ctrl = new PipelineController(_state);
     }
 

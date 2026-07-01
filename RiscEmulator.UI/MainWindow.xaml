@@ -337,6 +337,16 @@
                                     <Button Grid.Column="4" Content="Aplica" FontSize="10" Padding="6,1"
                                             Command="{Binding ReconfigureCacheCommand}"/>
                                 </Grid>
+                                <Grid Margin="0,3,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Scriere D:" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <ComboBox Grid.Column="1" FontSize="10"
+                                              ItemsSource="{Binding AvailableWritePolicies}"
+                                              SelectedItem="{Binding DCacheWritePolicy}"/>
+                                </Grid>
                             </StackPanel>
                             <Grid Grid.Row="1">
                                 <Grid.ColumnDefinitions>
