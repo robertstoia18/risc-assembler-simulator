@@ -6,8 +6,8 @@ namespace RiscEmulator.UI.ViewModels;
 
 public class MainViewModel : BaseViewModel
 {
-    private readonly ProcessorState _state = new();
-    private readonly PipelineController _ctrl;
+    private ProcessorState _state;
+    private PipelineController _ctrl;
     private readonly Assembler _asm = new();
 
     private string _programSource = string.Empty;
@@ -75,31 +75,96 @@ public class MainViewModel : BaseViewModel
     public ICommand LoadProgramCommand { get; }
     public ICommand ResetCommand { get; }
 
+    // Cache configuration properties
+    private int _iCacheNumSets = 16;
+    private int _iCacheBlockSize = 4;
+    private int _iCacheAssociativity = 2;
+    private int _dCacheNumSets = 16;
+  private int _dCacheBlockSize = 4;
+    private int _dCacheAssociativity = 2;
+
+    public int ICacheNumSets { get => _iCacheNumSets; set => Set(ref _iCacheNumSets, value); }
+    public int ICacheBlockSize { get => _iCacheBlockSize; set => Set(ref _iCacheBlockSize, value); }
+    public int ICacheAssociativity { get => _iCacheAssociativity; set => Set(ref _iCacheAssociativity, value); }
+    public int DCacheNumSets { get => _dCacheNumSets; set => Set(ref _dCacheNumSets, value); }
+    public int DCacheBlockSize { get => _dCacheBlockSize; set => Set(ref _dCacheBlockSize, value); }
+    public int DCacheAssociativity { get => _dCacheAssociativity; set => Set(ref _dCacheAssociativity, value); }
+
+    public string ICacheConfig => $"{ICacheNumSets}×{ICacheAssociativity}×{ICacheBlockSize} ({ICacheNumSets * ICacheAssociativity * ICacheBlockSize} words)";
+    public string DCacheConfig => $"{DCacheNumSets}×{DCacheAssociativity}×{DCacheBlockSize} ({DCacheNumSets * DCacheAssociativity * DCacheBlockSize} words)";
+
     private static readonly string[] SlotNames = { "IF", "DEC/OF" };
     private static readonly string[] UnitNames = { "ALU", "MUL", "LD/ST", "JMP" };
 
+    public ICommand ReconfigureCacheCommand { get; }
+
     public MainViewModel()
     {
-        _ctrl = new PipelineController(_state);
+   InitializeProcessor();
 
-        for (int i = 0; i < 2; i++)
-            PipelineSlots.Add(new PipelineSlotViewModel { StageName = SlotNames[i] });
+      for (int i = 0; i < 2; i++)
+       PipelineSlots.Add(new PipelineSlotViewModel { StageName = SlotNames[i] });
 
         for (int i = 0; i < 4; i++)
-            Units.Add(new FunctionalUnitViewModel { UnitName = UnitNames[i] });
+   Units.Add(new FunctionalUnitViewModel { UnitName = UnitNames[i] });
 
         for (int i = 0; i < 32; i++)
             Registers.Add(new RegisterViewModel(i));
 
-        for (int i = 0; i < 16; i++)
-        {
-            ICacheBlocks.Add(new CacheBlockViewModel { Index = i });
-            DCacheBlocks.Add(new CacheBlockViewModel { Index = i });
-        }
+        InitializeCacheBlocks();
 
-        NextClockCommand = new RelayCommand(OnNextClock, () => _programLoaded && !_ctrl.Halted);
-        LoadProgramCommand = new RelayCommand(OnLoadProgram);
+    NextClockCommand = new RelayCommand(OnNextClock, () => _programLoaded && !_ctrl.Halted);
+    LoadProgramCommand = new RelayCommand(OnLoadProgram);
         ResetCommand = new RelayCommand(OnReset);
+        ReconfigureCacheCommand = new RelayCommand(OnReconfigureCache, () => !_programLoaded);
+  }
+
+    private void InitializeProcessor()
+    {
+        _state = new ProcessorState(
+        iCacheNumSets: _iCacheNumSets,
+iCacheBlockSize: _iCacheBlockSize,
+            iCacheAssociativity: _iCacheAssociativity,
+          dCacheNumSets: _dCacheNumSets,
+          dCacheBlockSize: _dCacheBlockSize,
+            dCacheAssociativity: _dCacheAssociativity);
+   _ctrl = new PipelineController(_state);
+    }
+
+    private void InitializeCacheBlocks()
+ {
+        ICacheBlocks.Clear();
+        DCacheBlocks.Clear();
+
+        int totalICacheBlocks = _state.ICache.NumSets * _state.ICache.Associativity;
+        int totalDCacheBlocks = _state.DCache.NumSets * _state.DCache.Associativity;
+
+        for (int i = 0; i < totalICacheBlocks; i++)
+     {
+       ICacheBlocks.Add(new CacheBlockViewModel { Index = i });
+    }
+
+      for (int i = 0; i < totalDCacheBlocks; i++)
+        {
+  DCacheBlocks.Add(new CacheBlockViewModel { Index = i });
+    }
+    }
+
+    private void OnReconfigureCache()
+    {
+   try
+     {
+         InitializeProcessor();
+            InitializeCacheBlocks();
+            RefreshUI();
+            OnPropertyChanged(nameof(ICacheConfig));
+       OnPropertyChanged(nameof(DCacheConfig));
+         StatusMessage = $"Cache reconfigurat: I-Cache={ICacheConfig}, D-Cache={DCacheConfig}";
+  }
+        catch (Exception ex)
+        {
+      StatusMessage = $"Eroare reconfigurare: {ex.Message}";
+        }
     }
 
     private int ParseAddress(string address)
@@ -178,28 +243,40 @@ public class MainViewModel : BaseViewModel
         RegC = _state.C;
         CycleCount = _ctrl.CycleCount;
 
+        int blockIndex = 0;
         for (int i = 0; i < ic.NumSets; i++)
-        {
-            var block = ic.Blocks[i];
-            var vm = ICacheBlocks[i];
-            vm.Valid = block.Valid;
-            vm.Tag = block.Tag;
-            vm.DataPreview = string.Join(" ", block.Data.Take(4).Select(d => $"{d:X4}"));
-        }
+    {
+            var set = ic.GetSet(i);
+            for (int j = 0; j < ic.Associativity; j++)
+         {
+  var block = set[j];
+                var vm = ICacheBlocks[blockIndex];
+  vm.Valid = block.Valid;
+   vm.Tag = block.Tag;
+                vm.DataPreview = string.Join(" ", block.Data.Take(4).Select(d => $"{d:X4}"));
+blockIndex++;
+            }
+     }
 
         var dc = _state.DCache;
         DCacheHits = dc.Hits;
         DCacheMisses = dc.Misses;
         DCacheHitRate = dc.HitRate;
         OnPropertyChanged(nameof(DCacheHitRateText));
-        for (int i = 0; i < dc.NumSets; i++)
-        {
-            var block = dc.Blocks[i];
-            var vm = DCacheBlocks[i];
-            vm.Valid = block.Valid;
-            vm.Tag = block.Tag;
-            vm.DataPreview = string.Join(" ", block.Data.Take(4).Select(d => $"{d:X4}"));
-        }
+            blockIndex = 0;
+              for (int i = 0; i < dc.NumSets; i++)
+              {
+             var set = dc.GetSet(i);
+         for (int j = 0; j < dc.Associativity; j++)
+          {
+               var block = set[j];
+              var vm = DCacheBlocks[blockIndex];
+         vm.Valid = block.Valid;
+           vm.Tag = block.Tag;
+                vm.DataPreview = string.Join(" ", block.Data.Take(4).Select(d => $"{d:X4}"));
+        blockIndex++;
+                  }
+            }
 
         for (int i = 0; i < 2; i++)
         {
