@@ -6,11 +6,9 @@ public class Cache
     private readonly int _blockSize;
     private readonly int _numSets;
     private readonly int _associativity;
-    private readonly ReplacementPolicy _policy;
+    private readonly ICacheReplacementPolicy _policy;
     private readonly WritePolicy _writePolicy;
     private readonly WriteBuffer? _writeBuffer;
-    private readonly Random _random;
-    private readonly int[] _clockPointer;
     private int _accessCounter;
 
     public int Hits { get; private set; }
@@ -23,7 +21,7 @@ public class Cache
         int numSets = 16,
         int blockSize = 4,
         int associativity = 1,
-        ReplacementPolicy policy = ReplacementPolicy.Random,
+        ICacheReplacementPolicy? policy = null,
         WritePolicy writePolicy = WritePolicy.WriteThrough,
         bool useWriteBuffer = false,
         int writeBufferCapacity = 4)
@@ -31,11 +29,10 @@ public class Cache
         _numSets = numSets;
         _blockSize = blockSize;
         _associativity = associativity;
-        _policy = policy;
+        _policy = policy ?? new RandomReplacementPolicy();
+        _policy.Reset(numSets);
         _writePolicy = writePolicy;
-        _random = new Random();
         _accessCounter = 0;
-        _clockPointer = new int[numSets];
         _writeBuffer = useWriteBuffer ? new WriteBuffer(writeBufferCapacity) : null;
 
         _sets = new CacheBlock[numSets][];
@@ -67,8 +64,7 @@ public class Cache
             if (block.Valid && block.Tag == tag)
             {
                 value = block.Data[offset];
-                block.LastAccessTime = _accessCounter;
-                block.ReferenceBit = true;
+                _policy.RecordAccess(set, idx, i, _accessCounter);
                 Hits++;
                 return true;
             }
@@ -88,60 +84,28 @@ public class Cache
 
         _accessCounter++;
 
-        CacheBlock? targetBlock = null;
+        int targetWayIndex = -1;
         for (int i = 0; i < _associativity; i++)
         {
             if (!set[i].Valid)
             {
-                targetBlock = set[i];
+                targetWayIndex = i;
                 break;
             }
         }
 
-        if (targetBlock == null)
-        {
-            int victimIndex = SelectVictim(set, idx);
-            targetBlock = set[victimIndex];
-        }
+        if (targetWayIndex < 0)
+            targetWayIndex = _policy.SelectVictim(set, idx);
 
+        var targetBlock = set[targetWayIndex];
         WriteBackIfDirty(targetBlock, idx, memory);
 
         targetBlock.Tag = tag;
         targetBlock.Valid = true;
         targetBlock.Dirty = false;
-        targetBlock.LastAccessTime = _accessCounter;
-        targetBlock.ReferenceBit = true;
+        _policy.RecordAccess(set, idx, targetWayIndex, _accessCounter);
         for (int i = 0; i < _blockSize; i++)
             targetBlock.Data[i] = memory.Read(blockStart + i);
-    }
-
-    private int SelectVictim(CacheBlock[] set, int idx)
-    {
-        switch (_policy)
-        {
-            case ReplacementPolicy.LruExact:
-                int lruIndex = 0;
-                for (int i = 1; i < _associativity; i++)
-                {
-                    if (set[i].LastAccessTime < set[lruIndex].LastAccessTime)
-                        lruIndex = i;
-                }
-                return lruIndex;
-
-            case ReplacementPolicy.LruApproximate:
-                int ptr = _clockPointer[idx];
-                while (set[ptr].ReferenceBit)
-                {
-                    set[ptr].ReferenceBit = false;
-                    ptr = (ptr + 1) % _associativity;
-                }
-                _clockPointer[idx] = (ptr + 1) % _associativity;
-                return ptr;
-
-            case ReplacementPolicy.Random:
-            default:
-                return _random.Next(_associativity);
-        }
     }
 
     private void WriteBackIfDirty(CacheBlock block, int setIndex, Memory memory)
@@ -186,8 +150,7 @@ public class Cache
             if (block.Valid && block.Tag == tag)
             {
                 block.Data[offset] = value;
-                block.LastAccessTime = _accessCounter;
-                block.ReferenceBit = true;
+                _policy.RecordAccess(set, idx, i, _accessCounter);
                 break;
             }
         }
@@ -209,8 +172,7 @@ public class Cache
             {
                 block.Data[offset] = value;
                 block.Dirty = true;
-                block.LastAccessTime = _accessCounter;
-                block.ReferenceBit = true;
+                _policy.RecordAccess(set, idx, i, _accessCounter);
                 Hits++;
                 return;
             }
@@ -227,7 +189,6 @@ public class Cache
             {
                 block.Data[offset] = value;
                 block.Dirty = true;
-                block.LastAccessTime = _accessCounter;
                 return;
             }
         }
@@ -294,9 +255,9 @@ public class Cache
         WriteBacks = 0;
         _accessCounter = 0;
         _writeBuffer?.Clear();
+        _policy.Reset(_numSets);
         for (int i = 0; i < _numSets; i++)
         {
-            _clockPointer[i] = 0;
             for (int j = 0; j < _associativity; j++)
             {
                 var block = _sets[i][j];
@@ -327,7 +288,7 @@ public class Cache
     public int BlockSize => _blockSize;
     public int NumSets => _numSets;
     public int Associativity => _associativity;
-    public ReplacementPolicy Policy => _policy;
+    public ICacheReplacementPolicy Policy => _policy;
     public WritePolicy WritePolicyType => _writePolicy;
     public bool HasWriteBuffer => _writeBuffer != null;
     public int WriteBufferCount => _writeBuffer?.Count ?? 0;
