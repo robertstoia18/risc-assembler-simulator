@@ -13,6 +13,7 @@ public class Cache
     private readonly int _numSets;
     private readonly int _associativity;
     private readonly Random _random;
+
     private readonly WritePolicy _writePolicy;
     private readonly WriteBuffer? _writeBuffer;
     private int _accessCounter;
@@ -22,6 +23,7 @@ public class Cache
     public int TotalAccesses => Hits + Misses;
     public double HitRate => TotalAccesses == 0 ? 0.0 : (double)Hits / TotalAccesses;
     public int WriteBacks { get; private set; }
+
 
     public Cache(
         int numSets = 16,
@@ -45,6 +47,7 @@ public class Cache
             _sets[i] = new CacheBlock[associativity];
             for (int j = 0; j < associativity; j++)
                 _sets[i][j] = new CacheBlock(blockSize);
+
         }
     }
 
@@ -54,30 +57,31 @@ public class Cache
     private int GetBlockStartAddress(int tag, int setIndex) => (tag * _numSets + setIndex) * _blockSize;
 
     public bool TryRead(int wordAddress, out int value)
-    {
-        int idx = GetIndex(wordAddress);
-        int tag = GetTag(wordAddress);
-        int offset = GetOffset(wordAddress);
-        var set = _sets[idx];
 
-        _accessCounter++;
+      {
+            int idx = GetIndex(wordAddress);
+            int tag = GetTag(wordAddress);
+            int offset = GetOffset(wordAddress);
+            var set = _sets[idx];
 
-        for (int i = 0; i < _associativity; i++)
-        {
-            var block = set[i];
-            if (block.Valid && block.Tag == tag)
+            _accessCounter++;
+
+            for (int i = 0; i < _associativity; i++)
             {
-                value = block.Data[offset];
-                block.LastAccessTime = _accessCounter;
-                Hits++;
-                return true;
-            }
-        }
+             var block = set[i];
+                if (block.Valid && block.Tag == tag)
+                {
+             value = block.Data[offset];
+            block.LastAccessTime = _accessCounter;
+         Hits++;
+     return true;
+         }
+     }
 
-        value = 0;
-        Misses++;
-        return false;
-    }
+          value = 0;
+            Misses++;
+            return false;
+        }
 
     public void LoadBlock(int wordAddress, Memory memory)
     {
@@ -207,6 +211,7 @@ public class Cache
             WriteBack(wordAddress, value, memory);
         else
             WriteThrough(wordAddress, value, memory);
+
     }
 
     public int Read(int wordAddress, Memory memory)
@@ -272,6 +277,7 @@ public class Cache
                 block.Tag = 0;
                 block.LastAccessTime = 0;
                 Array.Clear(block.Data, 0, block.Data.Length);
+
             }
         }
     }

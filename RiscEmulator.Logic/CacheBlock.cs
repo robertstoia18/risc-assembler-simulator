@@ -16,6 +16,7 @@ public class CacheBlock
 
     public CacheBlock(int blockSize)
     {
+
         Data = new int[blockSize];
         Valid = false;
         Dirty = false;

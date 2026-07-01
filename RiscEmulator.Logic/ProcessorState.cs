@@ -46,6 +46,7 @@ public class ProcessorState
     public FunctionalUnit[] FunctionalUnits { get; }
 
     public ProcessorState(
+
         int iCacheNumSets = 16,
         int iCacheBlockSize = 4,
         int iCacheAssociativity = 2,
