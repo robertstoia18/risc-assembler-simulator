@@ -45,6 +45,13 @@ public class ProcessorState
 
     public FunctionalUnit[] FunctionalUnits { get; }
 
+    private static ICacheReplacementPolicy CreatePolicy(ReplacementPolicy p) => p switch
+    {
+        ReplacementPolicy.LruExact => new LruExactReplacementPolicy(),
+        ReplacementPolicy.LruApproximate => new LruApproximateReplacementPolicy(),
+        _ => new RandomReplacementPolicy()
+    };
+
     public ProcessorState(
         int iCacheNumSets = 16,
         int iCacheBlockSize = 4,
@@ -58,8 +65,8 @@ public class ProcessorState
         bool dCacheUseWriteBuffer = false,
         int dCacheWriteBufferCapacity = 4)
     {
-        ICache = new Cache(iCacheNumSets, iCacheBlockSize, iCacheAssociativity, iCacheReplacementPolicy);
-        DCache = new Cache(dCacheNumSets, dCacheBlockSize, dCacheAssociativity, dCacheReplacementPolicy, dCacheWritePolicy, dCacheUseWriteBuffer, dCacheWriteBufferCapacity);
+        ICache = new Cache(iCacheNumSets, iCacheBlockSize, iCacheAssociativity, CreatePolicy(iCacheReplacementPolicy));
+        DCache = new Cache(dCacheNumSets, dCacheBlockSize, dCacheAssociativity, CreatePolicy(dCacheReplacementPolicy), dCacheWritePolicy, dCacheUseWriteBuffer, dCacheWriteBufferCapacity);
 
         for (int i = 0; i < 2; i++)
             Slots[i] = new PipelineSlot { Instruction = Instruction.MakeNop() };

@@ -196,20 +196,20 @@ Assert.Equal(8, cache.Misses);
     [Fact]
     public void Cache_ReplacementPolicy_IsConfigurable()
     {
-        var random = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.Random);
-        var lruExact = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruExact);
-        var lruApprox = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruApproximate);
+        var random = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: new RandomReplacementPolicy());
+        var lruExact = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: new LruExactReplacementPolicy());
+        var lruApprox = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: new LruApproximateReplacementPolicy());
 
-        Assert.Equal(ReplacementPolicy.Random, random.Policy);
-        Assert.Equal(ReplacementPolicy.LruExact, lruExact.Policy);
-        Assert.Equal(ReplacementPolicy.LruApproximate, lruApprox.Policy);
+        Assert.IsType<RandomReplacementPolicy>(random.Policy);
+        Assert.IsType<LruExactReplacementPolicy>(lruExact.Policy);
+        Assert.IsType<LruApproximateReplacementPolicy>(lruApprox.Policy);
     }
 
     [Fact]
     public void Cache_DefaultPolicy_IsRandom()
     {
         var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2);
-        Assert.Equal(ReplacementPolicy.Random, cache.Policy);
+        Assert.IsType<RandomReplacementPolicy>(cache.Policy);
     }
 
     [Fact]
@@ -219,7 +219,7 @@ Assert.Equal(8, cache.Misses);
         for (int i = 0; i < 1024; i++)
             memory.Write(i, i);
 
-        var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruExact);
+        var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: new LruExactReplacementPolicy());
 
         cache.Read(0, memory);
         cache.Read(64, memory);
@@ -242,7 +242,7 @@ Assert.Equal(8, cache.Misses);
         for (int i = 0; i < 1024; i++)
             memory.Write(i, i);
 
-        var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: ReplacementPolicy.LruApproximate);
+        var cache = new Cache(numSets: 4, blockSize: 4, associativity: 2, policy: new LruApproximateReplacementPolicy());
 
         cache.Read(0, memory);
         cache.Read(64, memory);
