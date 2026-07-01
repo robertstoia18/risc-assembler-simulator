@@ -221,65 +221,11 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- IF -->
-                        <Grid Grid.Column="0" Margin="0,0,4,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="IF" Style="{StaticResource StageTitle}"/>
-                            <Separator Grid.Row="1" Background="#D0D0D0" Margin="0,2,0,4"/>
-                            <ContentControl Grid.Row="2" Content="{Binding PipelineSlots[0]}" ContentTemplate="{StaticResource StageTemplate}"/>
-                        </Grid>
-
-                        <!-- DEC/OF -->
-                        <Grid Grid.Column="1" Margin="0,0,4,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="DEC/OF" Style="{StaticResource StageTitle}"/>
-                            <Separator Grid.Row="1" Background="#D0D0D0" Margin="0,2,0,4"/>
-                            <ContentControl Grid.Row="2" Content="{Binding PipelineSlots[1]}" ContentTemplate="{StaticResource StageTemplate}"/>
-                        </Grid>
-
-                        <!-- EX -->
-                        <Grid Grid.Column="2" Margin="0,0,4,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="EX" Style="{StaticResource StageTitle}"/>
-                            <Separator Grid.Row="1" Background="#D0D0D0" Margin="0,2,0,4"/>
-                            <ContentControl Grid.Row="2" Content="{Binding PipelineSlots[2]}" ContentTemplate="{StaticResource StageTemplate}"/>
-                        </Grid>
-
-                        <!-- MEM -->
-                        <Grid Grid.Column="3" Margin="0,0,4,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="MEM" Style="{StaticResource StageTitle}"/>
-                            <Separator Grid.Row="1" Background="#D0D0D0" Margin="0,2,0,4"/>
-                            <ContentControl Grid.Row="2" Content="{Binding PipelineSlots[3]}" ContentTemplate="{StaticResource StageTemplate}"/>
-                        </Grid>
-
-                        <!-- WB -->
-                        <Grid Grid.Column="4">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="WB" Style="{StaticResource StageTitle}"/>
-                            <Separator Grid.Row="1" Background="#D0D0D0" Margin="0,2,0,4"/>
-                            <ContentControl Grid.Row="2" Content="{Binding PipelineSlots[4]}" ContentTemplate="{StaticResource StageTemplate}"/>
-                        </Grid>
+                        <ContentControl Grid.Column="0" Content="{Binding PipelineSlots[0]}" ContentTemplate="{StaticResource StageTemplate}" Margin="0,0,2,0"/>
+                        <ContentControl Grid.Column="1" Content="{Binding PipelineSlots[1]}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0"/>
+                        <ContentControl Grid.Column="2" Content="{Binding PipelineSlots[2]}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0"/>
+                        <ContentControl Grid.Column="3" Content="{Binding PipelineSlots[3]}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0"/>
+                        <ContentControl Grid.Column="4" Content="{Binding PipelineSlots[4]}" ContentTemplate="{StaticResource StageTemplate}" Margin="2,0,0,0"/>
                     </Grid>
                 </Border>
 
