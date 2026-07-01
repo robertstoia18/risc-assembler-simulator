@@ -106,15 +106,11 @@ if (!set[i].Valid)
             targetBlock.Data[i] = memory.Read(blockStart + i);
     }
 
-    /// <summary>
-    /// Alege indexul blocului victima dintr-un set plin, conform politicii de inlocuire.
-    /// </summary>
     private int SelectVictim(CacheBlock[] set, int idx)
     {
         switch (_policy)
         {
             case ReplacementPolicy.LruExact:
-                // Victima = blocul cu cel mai vechi timestamp de acces.
                 int lruIndex = 0;
                 for (int i = 1; i < _associativity; i++)
                 {
@@ -124,8 +120,6 @@ if (!set[i].Valid)
                 return lruIndex;
 
             case ReplacementPolicy.LruApproximate:
-                // NRU / Second-Chance (clock): cauta primul bloc cu ReferenceBit = false,
-                // curatand bitii intalniti pe drum (le acorda "a doua sansa").
                 int ptr = _clockPointer[idx];
                 while (set[ptr].ReferenceBit)
                 {
