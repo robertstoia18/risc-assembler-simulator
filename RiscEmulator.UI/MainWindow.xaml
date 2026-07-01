@@ -154,7 +154,7 @@
         </TabControl.Resources>
 
         <!-- ===== TAB 0: PIPELINE 5 STAGII (Nota 5) ===== -->
-        <TabItem Header="Pipeline 5 Stagii" DataContext="{Binding Pipeline}">
+        <TabItem Header="Pipeline 5 Stagii" DataContext="{Binding BasicPipeline}">
             <Grid Margin="8">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="140"/>
@@ -214,11 +214,11 @@
                 <Border Grid.Row="1" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,0,8">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1*"/>
-                            <ColumnDefinition Width="1*"/>
-                            <ColumnDefinition Width="1.4*"/>
-                            <ColumnDefinition Width="1.4*"/>
-                            <ColumnDefinition Width="1.4*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- IF -->
@@ -254,21 +254,7 @@
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0" Text="EX" Style="{StaticResource StageTitle}"/>
                             <Separator Grid.Row="1" Background="#D0D0D0" Margin="0,2,0,4"/>
-                            <ItemsControl Grid.Row="2" ItemsSource="{Binding Units}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#FAFAFA" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="2" Margin="0,1" Padding="3">
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding UnitName}" FontWeight="Bold" Foreground="#6A1B9A" FontSize="9" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="{Binding EX.InstructionLabel}" FontFamily="Consolas" FontSize="10" HorizontalAlignment="Center" Foreground="#0D3B5E" FontWeight="Bold"/>
-                                                <TextBlock Text="{Binding EX.AHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
-                                                <TextBlock Text="{Binding EX.BHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
-                                                <TextBlock Text="{Binding EX.CHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <ContentControl Grid.Row="2" Content="{Binding PipelineSlots[2]}" ContentTemplate="{StaticResource StageTemplate}"/>
                         </Grid>
 
                         <!-- MEM -->
@@ -280,21 +266,7 @@
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0" Text="MEM" Style="{StaticResource StageTitle}"/>
                             <Separator Grid.Row="1" Background="#D0D0D0" Margin="0,2,0,4"/>
-                            <ItemsControl Grid.Row="2" ItemsSource="{Binding Units}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#FAFAFA" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="2" Margin="0,1" Padding="3">
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding UnitName}" FontWeight="Bold" Foreground="#6A1B9A" FontSize="9" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="{Binding MEM.InstructionLabel}" FontFamily="Consolas" FontSize="10" HorizontalAlignment="Center" Foreground="#0D3B5E" FontWeight="Bold"/>
-                                                <TextBlock Text="{Binding MEM.AHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
-                                                <TextBlock Text="{Binding MEM.BHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
-                                                <TextBlock Text="{Binding MEM.CHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <ContentControl Grid.Row="2" Content="{Binding PipelineSlots[3]}" ContentTemplate="{StaticResource StageTemplate}"/>
                         </Grid>
 
                         <!-- WB -->
@@ -306,21 +278,7 @@
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0" Text="WB" Style="{StaticResource StageTitle}"/>
                             <Separator Grid.Row="1" Background="#D0D0D0" Margin="0,2,0,4"/>
-                            <ItemsControl Grid.Row="2" ItemsSource="{Binding Units}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#FAFAFA" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="2" Margin="0,1" Padding="3">
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding UnitName}" FontWeight="Bold" Foreground="#6A1B9A" FontSize="9" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="{Binding WB.InstructionLabel}" FontFamily="Consolas" FontSize="10" HorizontalAlignment="Center" Foreground="#0D3B5E" FontWeight="Bold"/>
-                                                <TextBlock Text="{Binding WB.AHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
-                                                <TextBlock Text="{Binding WB.BHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
-                                                <TextBlock Text="{Binding WB.CHex}" Style="{StaticResource HardwareValue}" FontSize="9"/>
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <ContentControl Grid.Row="2" Content="{Binding PipelineSlots[4]}" ContentTemplate="{StaticResource StageTemplate}"/>
                         </Grid>
                     </Grid>
                 </Border>
